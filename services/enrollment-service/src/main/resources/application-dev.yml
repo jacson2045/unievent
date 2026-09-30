@@ -1,0 +1,45 @@
+server:
+  port: 8083
+
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:15436/enrollment_db
+    username: unievent
+    password: unievent123
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: true
+  flyway:
+    enabled: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  metrics:
+    tags:
+      application: ${spring.application.name}
+  endpoint:
+    health:
+      show-details: always
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+
+jwt:
+  secret: unievent-pay-clave-secreta-super-larga-para-firmar-tokens-2026
+
+mercadopago:
+  public-key: APP_USR-67750983-cddd-4776-8a85-e470724c0b82
+  access-token: APP_USR-3274535111423902-090519-b0d27a9f1284de45e3f2a803dcc569e0-3669034880
+
+logging:
+  level:
+    pe.edu.upeu.inscripcion: DEBUG
+
+services:
+  event-service:
+    base-url: http://localhost:8080

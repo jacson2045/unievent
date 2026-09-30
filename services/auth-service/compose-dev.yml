@@ -1,0 +1,16 @@
+services:
+  postgres-auth-dev:
+    image: postgres:16
+    container_name: unievent-postgres-auth-dev
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: auth_db
+      POSTGRES_USER: unievent
+      POSTGRES_PASSWORD: unievent123
+    ports:
+      - "15435:5432"
+    volumes:
+      - auth_dev_data:/var/lib/postgresql/data
+
+volumes:
+  auth_dev_data:

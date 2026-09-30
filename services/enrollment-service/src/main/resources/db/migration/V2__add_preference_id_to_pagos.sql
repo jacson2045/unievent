@@ -1,0 +1,1 @@
+ALTER TABLE pagos ADD COLUMN preference_id VARCHAR(100);

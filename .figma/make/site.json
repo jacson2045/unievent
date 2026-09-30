@@ -1,0 +1,10 @@
+{
+  "description": "Platform for universities to manage events, registrations, payments, attendance, and notifications with tailored dashboards for students, organizers, and admins.",
+  "robots": {
+    "index": false
+  },
+  "accessibility": {
+    "addBypassLinks": false,
+    "ignoreReducedMotion": false
+  }
+}

@@ -1,0 +1,16 @@
+services:
+  postgres-enrollment-dev:
+    image: postgres:16
+    container_name: unievent-postgres-enrollment-dev
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: enrollment_db
+      POSTGRES_USER: unievent
+      POSTGRES_PASSWORD: unievent123
+    ports:
+      - "15436:5432"
+    volumes:
+      - enrollment_dev_data:/var/lib/postgresql/data
+
+volumes:
+  enrollment_dev_data:
