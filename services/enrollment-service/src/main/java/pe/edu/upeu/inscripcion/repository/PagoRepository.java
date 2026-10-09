@@ -6,5 +6,5 @@ import pe.edu.upeu.inscripcion.entity.Pago;
 import java.util.Optional;
 
 public interface PagoRepository extends JpaRepository<Pago, Long> {
-    Optional<Pago> findByInscripcionId(Long inscripcionId);
+    Optional<Pago> findTopByInscripcionIdOrderByIdDesc(Long inscripcionId);
 }

@@ -1,34 +1,13 @@
 package pe.edu.upeu.inscripcion.client;
 
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
-import org.springframework.web.client.RestClient;
-import org.springframework.web.client.RestClientResponseException;
+import org.springframework.cloud.openfeign.FeignClient;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import pe.edu.upeu.inscripcion.dto.EventoClienteResponse;
 
-import java.util.Optional;
+@FeignClient(name = "event-service", url = "${services.event-service.base-url}")
+public interface EventoClient {
 
-@Component
-public class EventoClient {
-
-    private final RestClient restClient;
-
-    public EventoClient(@Value("${services.event-service.base-url}") String baseUrl) {
-        this.restClient = RestClient.builder().baseUrl(baseUrl).build();
-    }
-
-    public Optional<EventoClienteResponse> buscarEvento(Long eventoId) {
-        try {
-            EventoClienteResponse evento = restClient.get()
-                    .uri("/api/eventos/{id}", eventoId)
-                    .retrieve()
-                    .body(EventoClienteResponse.class);
-            return Optional.ofNullable(evento);
-        } catch (RestClientResponseException e) {
-            if (e.getStatusCode().value() == 404) {
-                return Optional.empty();
-            }
-            throw e;
-        }
-    }
+    @GetMapping("/api/eventos/{id}")
+    EventoClienteResponse buscarEventoRaw(@PathVariable("id") Long id);
 }

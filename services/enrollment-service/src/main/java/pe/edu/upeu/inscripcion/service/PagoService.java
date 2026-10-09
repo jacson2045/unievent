@@ -10,7 +10,6 @@ import com.mercadopago.resources.payment.Payment;
 import com.mercadopago.resources.preference.Preference;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import pe.edu.upeu.inscripcion.client.EventoClient;
 import pe.edu.upeu.inscripcion.dto.EstadoPagoResponse;
 import pe.edu.upeu.inscripcion.dto.EventoClienteResponse;
 import pe.edu.upeu.inscripcion.dto.PreferenciaResponse;
@@ -30,17 +29,17 @@ public class PagoService {
 
     private final InscripcionRepository inscripcionRepository;
     private final PagoRepository pagoRepository;
-    private final EventoClient eventoClient;
+    private final EventoConsultaService eventoConsultaService;
 
     public PreferenciaResponse crearPreferencia(Long inscripcionId, String estudianteCorreo) {
         Inscripcion inscripcion = inscripcionRepository.findById(inscripcionId)
-                .orElseThrow(() -> new NoSuchElementException("Inscripción no encontrada"));
+                .orElseThrow(() -> new NoSuchElementException("InscripciÃ³n no encontrada"));
 
         if (!inscripcion.getEstudianteCorreo().equals(estudianteCorreo)) {
-            throw new IllegalStateException("No puedes pagar una inscripción de otro estudiante");
+            throw new IllegalStateException("No puedes pagar una inscripciÃ³n de otro estudiante");
         }
 
-        EventoClienteResponse evento = eventoClient.buscarEvento(inscripcion.getEventoId())
+        EventoClienteResponse evento = eventoConsultaService.buscarEvento(inscripcion.getEventoId())
                 .orElseThrow(() -> new NoSuchElementException("El evento ya no existe"));
 
         Pago pago = Pago.builder()
@@ -88,14 +87,14 @@ public class PagoService {
 
     public EstadoPagoResponse consultarEstado(Long inscripcionId, String estudianteCorreo) {
         Inscripcion inscripcion = inscripcionRepository.findById(inscripcionId)
-                .orElseThrow(() -> new NoSuchElementException("Inscripción no encontrada"));
+                .orElseThrow(() -> new NoSuchElementException("InscripciÃ³n no encontrada"));
 
         if (!inscripcion.getEstudianteCorreo().equals(estudianteCorreo)) {
             throw new IllegalStateException("No puedes consultar el pago de otro estudiante");
         }
 
-        Pago pago = pagoRepository.findByInscripcionId(inscripcionId)
-                .orElseThrow(() -> new NoSuchElementException("Este pago aún no fue iniciado"));
+        Pago pago = pagoRepository.findTopByInscripcionIdOrderByIdDesc(inscripcionId)
+                .orElseThrow(() -> new NoSuchElementException("Este pago aÃºn no fue iniciado"));
 
         actualizarEstadoDesdeMercadoPago(pago);
 

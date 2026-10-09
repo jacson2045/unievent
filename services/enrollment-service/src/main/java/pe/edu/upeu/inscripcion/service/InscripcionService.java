@@ -2,7 +2,6 @@ package pe.edu.upeu.inscripcion.service;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import pe.edu.upeu.inscripcion.client.EventoClient;
 import pe.edu.upeu.inscripcion.dto.EventoClienteResponse;
 import pe.edu.upeu.inscripcion.dto.InscripcionRequest;
 import pe.edu.upeu.inscripcion.dto.InscripcionResponse;
@@ -16,14 +15,14 @@ import java.util.NoSuchElementException;
 public class InscripcionService {
 
     private final InscripcionRepository inscripcionRepository;
-    private final EventoClient eventoClient;
+    private final EventoConsultaService eventoConsultaService;
 
     public InscripcionResponse crear(InscripcionRequest request, String estudianteCorreo) {
-        EventoClienteResponse evento = eventoClient.buscarEvento(request.getEventoId())
+        EventoClienteResponse evento = eventoConsultaService.buscarEvento(request.getEventoId())
                 .orElseThrow(() -> new NoSuchElementException("El evento no existe"));
 
         if (!"ACTIVO".equals(evento.getEstado())) {
-            throw new IllegalStateException("El evento no está activo");
+            throw new IllegalStateException("El evento no estÃ¡ activo");
         }
 
         long inscritos = inscripcionRepository.countByEventoIdAndEstado(request.getEventoId(), "CONFIRMADA");
@@ -43,7 +42,7 @@ public class InscripcionService {
 
     public InscripcionResponse obtenerPorId(Long id, String estudianteCorreo) {
         Inscripcion inscripcion = inscripcionRepository.findById(id)
-                .orElseThrow(() -> new NoSuchElementException("Inscripción no encontrada"));
+                .orElseThrow(() -> new NoSuchElementException("InscripciÃ³n no encontrada"));
 
         if (!inscripcion.getEstudianteCorreo().equals(estudianteCorreo)) {
             throw new IllegalStateException("No puedes ver inscripciones de otro estudiante");
