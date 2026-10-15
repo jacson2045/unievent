@@ -33,11 +33,11 @@ springdoc:
     path: /swagger-ui.html
 
 jwt:
-  secret: unievent-pay-clave-secreta-super-larga-para-firmar-tokens-2026
+  secret: ${JWT_SECRET}
 
 mercadopago:
-  public-key: APP_USR-67750983-cddd-4776-8a85-e470724c0b82
-  access-token: APP_USR-3274535111423902-090519-b0d27a9f1284de45e3f2a803dcc569e0-3669034880
+  public-key: ${MERCADOPAGO_PUBLIC_KEY}
+  access-token: ${MERCADOPAGO_ACCESS_TOKEN}
 
 logging:
   level:

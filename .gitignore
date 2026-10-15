@@ -18,3 +18,12 @@ logs/
 # beside it.
 /.plugins/
 /.opencode-skills/
+
+# archivos locales
+inscripcion.json
+login.json
+*.zip
+docker-compose.backup.yml
+.vscode/
+**/target/
+**/*.log

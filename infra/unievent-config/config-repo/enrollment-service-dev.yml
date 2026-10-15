@@ -1,0 +1,59 @@
+server:
+  port: 8083
+
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:15436/enrollment_db
+    username: unievent
+    password: unievent123
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: true
+  flyway:
+    enabled: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus,circuitbreakers,circuitbreakerevents,configprops
+  metrics:
+    tags:
+      application: ${spring.application.name}
+  endpoint:
+    health:
+      show-details: always
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+
+jwt:
+  secret: ${JWT_SECRET}
+
+mercadopago:
+  public-key: ${MERCADOPAGO_PUBLIC_KEY}
+  access-token: ${MERCADOPAGO_ACCESS_TOKEN}
+
+logging:
+  level:
+    pe.edu.upeu.inscripcion: DEBUG
+    io.github.resilience4j: DEBUG
+    org.springframework.cloud.circuitbreaker: DEBUG
+
+services:
+  event-service:
+    base-url: http://localhost:8080
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      eventoService:
+        sliding-window-type: COUNT_BASED
+        sliding-window-size: 5
+        minimum-number-of-calls: 5
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 10s
+        permitted-number-of-calls-in-half-open-state: 3
+        automatic-transition-from-open-to-half-open-enabled: true
