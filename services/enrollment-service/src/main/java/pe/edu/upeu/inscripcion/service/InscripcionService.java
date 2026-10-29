@@ -1,3 +1,4 @@
+
 package pe.edu.upeu.inscripcion.service;
 
 import lombok.RequiredArgsConstructor;
@@ -8,6 +9,7 @@ import pe.edu.upeu.inscripcion.dto.InscripcionResponse;
 import pe.edu.upeu.inscripcion.entity.Inscripcion;
 import pe.edu.upeu.inscripcion.repository.InscripcionRepository;
 
+import java.util.List;
 import java.util.NoSuchElementException;
 
 @Service
@@ -17,17 +19,34 @@ public class InscripcionService {
     private final InscripcionRepository inscripcionRepository;
     private final EventoConsultaService eventoConsultaService;
 
-    public InscripcionResponse crear(InscripcionRequest request, String estudianteCorreo) {
-        EventoClienteResponse evento = eventoConsultaService.buscarEvento(request.getEventoId())
-                .orElseThrow(() -> new NoSuchElementException("El evento no existe"));
+    public InscripcionResponse crear(
+            InscripcionRequest request,
+            String estudianteCorreo) {
+
+        EventoClienteResponse evento = eventoConsultaService
+                .buscarEvento(request.getEventoId())
+                .orElseThrow(() ->
+                        new NoSuchElementException("El evento no existe"));
 
         if (!"ACTIVO".equals(evento.getEstado())) {
-            throw new IllegalStateException("El evento no estÃ¡ activo");
+            throw new IllegalStateException(
+                    "El evento no está activo");
         }
+        if (inscripcionRepository.existsByEstudianteCorreoAndEventoId(
+        estudianteCorreo,
+        request.getEventoId())) {
 
-        long inscritos = inscripcionRepository.countByEventoIdAndEstado(request.getEventoId(), "CONFIRMADA");
+    throw new IllegalStateException(
+            "Ya estás inscrito en este evento");
+}
+
+        long inscritos = inscripcionRepository
+                .countByEventoIdAndEstado(
+                        request.getEventoId(), "CONFIRMADA");
+
         if (inscritos >= evento.getCapacidad()) {
-            throw new IllegalStateException("No hay cupos disponibles para este evento");
+            throw new IllegalStateException(
+                    "No hay cupos disponibles para este evento");
         }
 
         Inscripcion inscripcion = Inscripcion.builder()
@@ -40,12 +59,29 @@ public class InscripcionService {
         return toResponse(guardada);
     }
 
-    public InscripcionResponse obtenerPorId(Long id, String estudianteCorreo) {
-        Inscripcion inscripcion = inscripcionRepository.findById(id)
-                .orElseThrow(() -> new NoSuchElementException("InscripciÃ³n no encontrada"));
+    public List<InscripcionResponse> listarPorEstudiante(
+            String estudianteCorreo) {
 
-        if (!inscripcion.getEstudianteCorreo().equals(estudianteCorreo)) {
-            throw new IllegalStateException("No puedes ver inscripciones de otro estudiante");
+        return inscripcionRepository
+                .findByEstudianteCorreo(estudianteCorreo)
+                .stream()
+                .map(this::toResponse)
+                .toList();
+    }
+
+    public InscripcionResponse obtenerPorId(
+            Long id,
+            String estudianteCorreo) {
+
+        Inscripcion inscripcion = inscripcionRepository.findById(id)
+                .orElseThrow(() ->
+                        new NoSuchElementException(
+                                "Inscripción no encontrada"));
+
+        if (!inscripcion.getEstudianteCorreo()
+                .equals(estudianteCorreo)) {
+            throw new IllegalStateException(
+                    "No puedes ver inscripciones de otro estudiante");
         }
 
         return toResponse(inscripcion);
