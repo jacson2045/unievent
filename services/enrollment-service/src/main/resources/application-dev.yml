@@ -5,41 +5,72 @@ spring:
   datasource:
     url: jdbc:postgresql://localhost:15436/enrollment_db
     username: unievent
-    password: unievent123
+    password: ${ENROLLMENT_DB_PASSWORD}
   jpa:
     hibernate:
       ddl-auto: validate
     show-sql: true
   flyway:
     enabled: true
+  kafka:
+    bootstrap-servers: localhost:9092
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+      acks: all
+      properties:
+        max.block.ms: 3000
+        request.timeout.ms: 3000
+        delivery.timeout.ms: 6000
+        enable.idempotence: true
 
 management:
   endpoints:
     web:
       exposure:
-        include: health,info,metrics,prometheus
+        include: health,info,metrics,prometheus,circuitbreakers,circuitbreakerevents
   metrics:
     tags:
       application: ${spring.application.name}
   endpoint:
     health:
       show-details: always
+  health:
+    circuitbreakers:
+      enabled: true
 
 springdoc:
   swagger-ui:
     path: /swagger-ui.html
 
 jwt:
-  secret: unievent-pay-clave-secreta-super-larga-para-firmar-tokens-2026
+  secret: ${JWT_SECRET}
 
 mercadopago:
-  public-key: APP_USR-67750983-cddd-4776-8a85-e470724c0b82
-  access-token: APP_USR-3274535111423902-090519-b0d27a9f1284de45e3f2a803dcc569e0-3669034880
+  public-key: ${MERCADOPAGO_PUBLIC_KEY}
+  access-token: ${MERCADOPAGO_ACCESS_TOKEN}
+
 
 logging:
   level:
     pe.edu.upeu.inscripcion: DEBUG
+    org.springframework.kafka: DEBUG
+    org.apache.kafka.clients.producer: DEBUG
+    org.apache.kafka.clients.NetworkClient: INFO
+
 
 services:
   event-service:
     base-url: http://localhost:8080
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      eventoService:
+        sliding-window-size: 10
+        minimum-number-of-calls: 5
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 10s
+        permitted-number-of-calls-in-half-open-state: 3
+        automatic-transition-from-open-to-half-open-enabled: true
+        register-health-indicator: true

@@ -1,0 +1,29 @@
+﻿site_name: UniEvent Pay
+site_description: Documentacion tecnica de UniEvent Pay
+site_author: Equipo UniEvent Pay
+
+theme:
+  name: material
+  language: es
+  features:
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+
+nav:
+  - Inicio: index.md
+  - Arquitectura: arquitectura.md
+  - Microservicios: microservicios.md
+  - Infraestructura: infraestructura.md
+  - Ejecucion: ejecucion.md
+  - Observabilidad: observabilidad.md
+
+markdown_extensions:
+  - tables
+  - admonition
+  - pymdownx.superfences
+  - toc:
+      permalink: true

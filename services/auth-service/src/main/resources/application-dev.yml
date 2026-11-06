@@ -17,7 +17,7 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info,metrics,prometheus
+        include: health,info,metrics,prometheus,loggers
   metrics:
     tags:
       application: ${spring.application.name}
@@ -30,9 +30,11 @@ springdoc:
     path: /swagger-ui.html
 
 jwt:
-  secret: unievent-pay-clave-secreta-super-larga-para-firmar-tokens-2026
+  secret: ${JWT_SECRET}
   expiration-ms: 86400000
 
 logging:
   level:
+    org.springframework.security: TRACE
+    org.springframework.web: DEBUG
     pe.edu.upeu.auth: DEBUG

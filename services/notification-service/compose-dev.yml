@@ -1,0 +1,16 @@
+services:
+  postgres-notification-dev:
+    image: postgres:16
+    container_name: unievent-postgres-notification-dev
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: notification_db
+      POSTGRES_USER: unievent
+      POSTGRES_PASSWORD: ${NOTIFICATION_DB_PASSWORD}
+    ports:
+      - "15437:5432"
+    volumes:
+      - notification_dev_data:/var/lib/postgresql/data
+
+volumes:
+  notification_dev_data:

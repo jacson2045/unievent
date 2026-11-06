@@ -34,5 +34,5 @@ logging:
     pe.edu.upeu.evento: DEBUG
 
 jwt:
-  secret: unievent-pay-clave-secreta-super-larga-para-firmar-tokens-2026
+  secret: ${JWT_SECRET}
     
