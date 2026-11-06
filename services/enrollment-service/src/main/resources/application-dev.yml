@@ -5,13 +5,24 @@ spring:
   datasource:
     url: jdbc:postgresql://localhost:15436/enrollment_db
     username: unievent
-    password: unievent123
+    password: ${ENROLLMENT_DB_PASSWORD}
   jpa:
     hibernate:
       ddl-auto: validate
     show-sql: true
   flyway:
     enabled: true
+  kafka:
+    bootstrap-servers: localhost:9092
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+      acks: all
+      properties:
+        max.block.ms: 3000
+        request.timeout.ms: 3000
+        delivery.timeout.ms: 6000
+        enable.idempotence: true
 
 management:
   endpoints:
@@ -39,9 +50,14 @@ mercadopago:
   public-key: ${MERCADOPAGO_PUBLIC_KEY}
   access-token: ${MERCADOPAGO_ACCESS_TOKEN}
 
+
 logging:
   level:
     pe.edu.upeu.inscripcion: DEBUG
+    org.springframework.kafka: DEBUG
+    org.apache.kafka.clients.producer: DEBUG
+    org.apache.kafka.clients.NetworkClient: INFO
+
 
 services:
   event-service:

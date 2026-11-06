@@ -27,3 +27,37 @@ docker-compose.backup.yml
 .vscode/
 **/target/
 **/*.log
+
+# Respaldos y datos locales
+infra/backups/
+site/
+respaldo-frontend-*/
+
+# Archivos temporales y copias de seguridad
+*.bak
+*.backup
+*.backup-*
+*.before-*
+*.before_*
+
+# Archivos compilados y temporales
+*.class
+classpath-temp.txt
+
+# Datos y logs de Kafka
+**/kafka-logs/
+
+# Archivos locales desconocidos o temporales
+/et
+
+# Respaldos con sufijos adicionales
+*.bak-*
+*.backup-*
+
+# Archivos originales extraidos de Kafka
+infra/kafka-*-original.sh
+infra/server-kafka-*.properties
+
+
+# Herramientas auxiliares locales
+/services/auth-service/GenerarHash.java

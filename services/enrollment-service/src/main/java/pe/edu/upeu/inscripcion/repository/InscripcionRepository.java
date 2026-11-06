@@ -11,7 +11,6 @@ public interface InscripcionRepository extends JpaRepository<Inscripcion, Long> 
 
     List<Inscripcion> findByEstudianteCorreo(String estudianteCorreo);
 
-    boolean existsByEstudianteCorreoAndEventoId(
-            String estudianteCorreo,
-            Long eventoId);
+    boolean existsByEstudianteCorreoAndEventoIdAndEstadoNot(
+        String estudianteCorreo, Long eventoId, String estado);
 }

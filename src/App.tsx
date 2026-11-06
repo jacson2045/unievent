@@ -41,6 +41,22 @@ const roleLabels: Record<Role, string> = {
   admin: "Administrador",
 }
 
+const ROLE_ALLOWED_PAGES: Record<Role, string[]> = {
+  student: [
+    "student-dashboard", "explore-events", "event-detail",
+    "enrollment-flow", "my-enrollments", "my-payments",
+    "my-attendance", "notifications", "profile"
+  ],
+  organizer: [
+    "organizer-dashboard", "my-events", "create-event",
+    "participants", "org-payments", "org-stats",
+    "notifications", "profile"
+  ],
+  admin: [
+    "admin-dashboard", "user-management",
+    "system-monitoring", "notifications", "profile"
+  ]
+}
 function ComingSoon({ title }: { title: string }) {
   return (
     <Card className="p-10 text-center">
@@ -82,7 +98,9 @@ export default function App() {
   const [role, setRole] = useState<Role>("student")
   const [userName, setUserName] = useState<string>("")
   const [currentPage, setCurrentPage] = useState<string>("student-dashboard")
+  const [selectedEventId, setSelectedEventId] = useState<number | null>(null)
   const [showForgot, setShowForgot] = useState<boolean>(false)
+  const [accessDenied, setAccessDenied] = useState<string>("")
 
   useEffect(() => {
     if (isAuthenticated()) {
@@ -100,6 +118,22 @@ export default function App() {
         )
       } else {
         clearAuth()
+      }
+    }
+  }, [])
+
+  useEffect(() => {
+    const user = getUser()
+    const requestedPage = new URLSearchParams(window.location.search).get("page")
+
+    if (user && requestedPage) {
+      if (ROLE_ALLOWED_PAGES[user.rol].includes(requestedPage)) {
+        setAccessDenied("")
+        setCurrentPage(requestedPage)
+      } else {
+        setAccessDenied(
+          `Tu rol de ${roleLabels[user.rol]} no tiene permiso para acceder a esta pantalla.`
+        )
       }
     }
   }, [])
@@ -127,7 +161,22 @@ export default function App() {
     setUserName("")
   }
 
-  const handleNavigate = (page: string) => setCurrentPage(page)
+  const handleNavigate = (page: string) => {
+    if (!ROLE_ALLOWED_PAGES[role].includes(page)) {
+      setAccessDenied(
+        `Tu rol de ${roleLabels[role]} no tiene permiso para acceder a esta pantalla.`
+      )
+      return
+    }
+
+    setAccessDenied("")
+    setCurrentPage(page)
+  }
+
+  const handleSelectEvent = (id: number) => {
+    setSelectedEventId(id)
+    setCurrentPage("event-detail")
+  }
 
   if (!authenticated) {
     if (showForgot) {
@@ -183,13 +232,13 @@ export default function App() {
       content = <StudentDashboard onNavigate={handleNavigate} />
       break
     case "explore-events":
-      content = <ExploreEvents onNavigate={handleNavigate} />
+      content = <ExploreEvents onNavigate={handleNavigate} onSelectEvent={handleSelectEvent} />
       break
     case "event-detail":
-      content = <EventDetail onNavigate={handleNavigate} />
+      content = <EventDetail onNavigate={handleNavigate} eventId={selectedEventId} />
       break
     case "enrollment-flow":
-      content = <EnrollmentFlow onNavigate={handleNavigate} />
+      content = <EnrollmentFlow onNavigate={handleNavigate} eventId={selectedEventId} />
       break
     case "my-enrollments":
       content = <MyEnrollments onNavigate={handleNavigate} />
@@ -239,6 +288,37 @@ export default function App() {
 
     default:
       content = <ComingSoon title={currentPage} />
+  }
+
+  if (accessDenied) {
+    content = (
+      <div className="max-w-2xl mx-auto mt-12">
+        <Card className="p-10 text-center">
+          <Badge variant="rejected">Acceso denegado</Badge>
+          <h2 className="mt-4 text-xl font-bold text-slate-900">
+            No tienes permiso para acceder
+          </h2>
+          <p className="mt-3 text-sm text-slate-600">
+            {accessDenied}
+          </p>
+          <button
+            onClick={() => {
+              setAccessDenied("")
+              setCurrentPage(
+                role === "student"
+                  ? "student-dashboard"
+                  : role === "organizer"
+                    ? "organizer-dashboard"
+                    : "admin-dashboard"
+              )
+            }}
+            className="mt-6 rounded-xl bg-primary-600 px-5 py-2 text-white"
+          >
+            Volver al inicio
+          </button>
+        </Card>
+      </div>
+    )
   }
 
   const displayName = userName || FALLBACK_ROLE_NAMES[role]

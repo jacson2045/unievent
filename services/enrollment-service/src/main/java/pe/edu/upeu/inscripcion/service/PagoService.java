@@ -1,4 +1,3 @@
-
 package pe.edu.upeu.inscripcion.service;
 
 import com.mercadopago.client.payment.PaymentClient;
@@ -10,6 +9,7 @@ import com.mercadopago.net.MPSearchRequest;
 import com.mercadopago.resources.payment.Payment;
 import com.mercadopago.resources.preference.Preference;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import pe.edu.upeu.inscripcion.dto.EstadoPagoResponse;
@@ -17,6 +17,7 @@ import pe.edu.upeu.inscripcion.dto.EventoClienteResponse;
 import pe.edu.upeu.inscripcion.dto.PreferenciaResponse;
 import pe.edu.upeu.inscripcion.entity.Inscripcion;
 import pe.edu.upeu.inscripcion.entity.Pago;
+import pe.edu.upeu.inscripcion.messaging.InscripcionEventPublisher;
 import pe.edu.upeu.inscripcion.repository.InscripcionRepository;
 import pe.edu.upeu.inscripcion.repository.PagoRepository;
 
@@ -25,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class PagoService {
@@ -32,6 +34,7 @@ public class PagoService {
     private final InscripcionRepository inscripcionRepository;
     private final PagoRepository pagoRepository;
     private final EventoConsultaService eventoConsultaService;
+    private final InscripcionEventPublisher eventPublisher;
 
     public PreferenciaResponse crearPreferencia(
             Long inscripcionId,
@@ -52,6 +55,13 @@ public class PagoService {
         if ("CONFIRMADA".equals(inscripcion.getEstado())) {
             throw new IllegalStateException(
                     "La inscripcion ya esta confirmada y no requiere otro pago");
+        }
+
+        // Una inscripcion compensada ya no se puede pagar: hay que crear otra.
+        if ("CANCELADA".equals(inscripcion.getEstado())) {
+            throw new IllegalStateException(
+                    "La inscripcion fue cancelada por un pago rechazado. "
+                    + "Crea una nueva inscripcion para volver a intentarlo");
         }
 
         if (pagoRepository.existsByInscripcionIdAndEstado(
@@ -197,7 +207,12 @@ public class PagoService {
                 return;
             }
 
-            Payment payment = resultados.getResults().get(0);
+            // Si el estudiante reintento la tarjeta en el mismo checkout,
+            // priorizar el pago aprobado sobre los rechazados.
+            Payment payment = resultados.getResults().stream()
+                    .filter(p -> "approved".equals(p.getStatus()))
+                    .findFirst()
+                    .orElse(resultados.getResults().get(0));
 
             String estadoAnterior = pago.getEstado();
             String nuevoEstado =
@@ -225,14 +240,27 @@ public class PagoService {
                 if (!"CONFIRMADA".equals(inscripcion.getEstado())) {
                     inscripcion.setEstado("CONFIRMADA");
                     inscripcionRepository.save(inscripcion);
+                    eventPublisher.publicarInscripcionConfirmada(inscripcion, pago);
+                }
+            }
+
+            // Compensacion: pago fallido -> la inscripcion pendiente se cancela.
+            if ("REJECTED".equals(nuevoEstado)
+                    || "CANCELLED".equals(nuevoEstado)) {
+                Inscripcion inscripcion = pago.getInscripcion();
+
+                if ("PENDIENTE".equals(inscripcion.getEstado())) {
+                    inscripcion.setEstado("CANCELADA");
+                    inscripcionRepository.save(inscripcion);
+                    log.warn("Compensacion: pago {} {} -> inscripcion {} CANCELADA",
+                            pago.getId(), nuevoEstado, inscripcion.getId());
                 }
             }
 
         } catch (Exception e) {
             // Conserva el estado local si falla la consulta externa.
-            System.err.println(
-                    "No se pudo consultar el estado en Mercado Pago: "
-                    + e.getMessage());
+            log.error("No se pudo consultar el estado en Mercado Pago: {}",
+                    e.getMessage());
         }
     }
 

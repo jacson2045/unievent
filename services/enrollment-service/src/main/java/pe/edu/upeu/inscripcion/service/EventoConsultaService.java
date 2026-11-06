@@ -36,6 +36,9 @@ public class EventoConsultaService {
             t.getMessage()
         );
 
-        return Optional.empty();
+        throw new IllegalStateException(
+            "No se puede completar la inscripción porque el servicio de eventos no está disponible",
+            t
+        );
     }
 }

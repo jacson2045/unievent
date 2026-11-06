@@ -1,3 +1,4 @@
+
 server:
   port: 8083
 
@@ -5,13 +6,20 @@ spring:
   datasource:
     url: jdbc:postgresql://localhost:15436/enrollment_db
     username: unievent
-    password: unievent123
+    password: ${ENROLLMENT_DB_PASSWORD}
   jpa:
     hibernate:
       ddl-auto: validate
     show-sql: true
   flyway:
     enabled: true
+  cloud:
+    openfeign:
+      client:
+        config:
+          event-service:
+            connectTimeout: 2000
+            readTimeout: 3000
 
 management:
   endpoints:

@@ -1,13 +1,20 @@
+
 services:
   kafka:
-    image: apache/kafka:4.0.1
+    image: apache/kafka:4.0.2
     container_name: unievent-kafka
     restart: unless-stopped
     ports:
       - "9092:9092"
+    volumes:
+      - kafka_data:/var/lib/kafka/data
+      - kafka_secrets:/etc/kafka/secrets
+      - kafka_shared_config:/mnt/shared/config
     environment:
       KAFKA_NODE_ID: 1
       KAFKA_PROCESS_ROLES: broker,controller
+      CLUSTER_ID: 5L6g3nShT-eMCtK--X86sw
+      KAFKA_LOG_DIRS: /var/lib/kafka/data
 
       KAFKA_LISTENERS: INTERNAL://:29092,EXTERNAL://:9092,CONTROLLER://:9093
       KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:29092,EXTERNAL://localhost:9092
@@ -63,3 +70,12 @@ services:
 
 volumes:
   grafana_data:
+  kafka_data:
+    external: true
+    name: unievent-kafka-data-recovered
+  kafka_secrets:
+    external: true
+    name: f1a9dee6176b07945aab4114cc7aa724377a4d4434a1f02fc44e19636ea9727f
+  kafka_shared_config:
+    external: true
+    name: 3cd93f33fa57e529b56bff8c06df1a92693f47c5e23c8bb382fd41bce2e7d52a

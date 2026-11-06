@@ -6,3 +6,7 @@ spring:
     active: dev
   config:
     import: optional:configserver:http://localhost:18888
+
+logging:
+  level:
+    org.springframework.security: DEBUG

@@ -1,4 +1,3 @@
-
 package pe.edu.upeu.inscripcion.service;
 
 import lombok.RequiredArgsConstructor;
@@ -32,13 +31,15 @@ public class InscripcionService {
             throw new IllegalStateException(
                     "El evento no está activo");
         }
-        if (inscripcionRepository.existsByEstudianteCorreoAndEventoId(
-        estudianteCorreo,
-        request.getEventoId())) {
 
-    throw new IllegalStateException(
-            "Ya estás inscrito en este evento");
-}
+        // Una inscripción CANCELADA (pago rechazado) no bloquea el reintento.
+        if (inscripcionRepository.existsByEstudianteCorreoAndEventoIdAndEstadoNot(
+                estudianteCorreo,
+                request.getEventoId(),
+                "CANCELADA")) {
+            throw new IllegalStateException(
+                    "Ya estás inscrito en este evento");
+        }
 
         long inscritos = inscripcionRepository
                 .countByEventoIdAndEstado(
