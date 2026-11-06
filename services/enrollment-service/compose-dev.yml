@@ -6,7 +6,7 @@ services:
     environment:
       POSTGRES_DB: enrollment_db
       POSTGRES_USER: unievent
-      POSTGRES_PASSWORD: unievent123
+      POSTGRES_PASSWORD: ${ENROLLMENT_DB_PASSWORD}
     ports:
       - "15436:5432"
     volumes:

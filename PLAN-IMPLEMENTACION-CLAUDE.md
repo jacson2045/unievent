@@ -25,7 +25,7 @@
 
 **Stack actual:**
 - **Frontend:** React 19 + Vite 8 + TypeScript 5.7 + Tailwind CSS v4 (`@tailwindcss/vite`) + lucide-react + recharts + oxfmt. Sin router, sin librería de estado, sin librería de tests.
-- **Backend:** Java 21, Spring Boot **4.0.8**, Maven, springdoc-openapi 3.1.0, jjwt 0.13.0, Flyway, PostgreSQL 16, Micrometer/Prometheus, Lombok, Mercado Pago SDK 2.8.0 (solo en enrollment).
+- **Backend:** Java 25, Spring Boot **4.0.8**, Maven, springdoc-openapi 3.1.0, jjwt 0.13.0, Flyway, PostgreSQL 16, Micrometer/Prometheus, Lombok, Mercado Pago SDK 2.8.0 (solo en enrollment).
 - **Config centralizada:** Spring Cloud Config Server (`unievent-config`).
 - **Observabilidad:** Prometheus + Grafana vía Docker Compose.
 - **El frontend corre dentro de Figma Make** (dev server en `$PORT`, default 8443, hot reload).
@@ -236,7 +236,7 @@ Catálogo visual de todos los componentes. **No está conectado a `App.tsx`** �
 ### 2.2 BACKEND — `services/`
 
 #### `services/auth-service` — puerto **8082**, DB `auth_db:15435`
-Paquete `pe.edu.upeu.auth`. Java 21, Spring Boot 4.0.8.
+Paquete `pe.edu.upeu.auth`. Java 25, Spring Boot 4.0.8.
 
 **Endpoints (los únicos 2 del servicio):**
 | Método | Ruta | Body | Respuesta | Auth |
@@ -258,10 +258,10 @@ Paquete `pe.edu.upeu.auth`. Java 21, Spring Boot 4.0.8.
 - `application-dev.yml` — port 8082, datasource `auth_db:15435`, `ddl-auto: validate`, `show-sql: true`, `flyway.enabled: true`, actuator expone `health,info,metrics,prometheus` con tag `application`, `health.show-details: always`, springdoc path `/swagger-ui.html`, `jwt.secret: unievent-pay-clave-secreta-super-larga-para-firmar-tokens-2026`, `jwt.expiration-ms: 86400000`, log DEBUG.
 - **NO tiene** `spring.config.import` del config server (a diferencia de event-service).
 - `compose-dev.yml` — postgres:16, container `unievent-postgres-auth-dev`, `15435:5432`, volumen `auth_dev_data`.
-- `Dockerfile` — `eclipse-temurin:21-jre`, copia `target/*.jar` a `/app/app.jar`, `EXPOSE 8080` ← **bug: declara 8080 pero el servicio corre en 8082**.
+- `Dockerfile` — `eclipse-temurin:25-jre`, copia `target/*.jar` a `/app/app.jar`, `EXPOSE 8080` ← **bug: declara 8080 pero el servicio corre en 8082**.
 
 #### `services/event-service` — puerto **8080**, DB `event_db:15434`
-Paquete `pe.edu.upeu.evento`. Java 21, Spring Boot 4.0.8. **Único servicio que usa Spring Cloud Config.**
+Paquete `pe.edu.upeu.evento`. Java 25, Spring Boot 4.0.8. **Único servicio que usa Spring Cloud Config.**
 
 **Endpoints:**
 | Método | Ruta | Body | Respuesta | Auth |
@@ -297,7 +297,7 @@ Paquete `pe.edu.upeu.evento`. Java 21, Spring Boot 4.0.8. **Único servicio que 
 - `Dockerfile` — `EXPOSE 8080` ✓ correcto.
 
 #### `services/enrollment-service` — puerto **8083**, DB `enrollment_db:15436`
-Paquete `pe.edu.upeu.inscripcion`. Java 21, Spring Boot 4.0.8. Único con SDK de Mercado Pago 2.8.0.
+Paquete `pe.edu.upeu.inscripcion`. Java 25, Spring Boot 4.0.8. Único con SDK de Mercado Pago 2.8.0.
 
 **Endpoints (4):**
 | Método | Ruta | Body | Respuesta | Auth |
@@ -636,7 +636,7 @@ Estudiante → Organizador → Admin, en ese orden (el estudiante es el que se d
 - Formato de números y fechas: siempre con `src/utils/format.ts` (es-PE, PEN).
 
 **Backend**
-- Java 21, Spring Boot 4.0.8, Maven. Paquete raíz `pe.edu.upeu.<servicio>`.
+- Java 25, Spring Boot 4.0.8, Maven. Paquete raíz `pe.edu.upeu.<servicio>`.
 - **Lombok siempre**: `@Getter @Setter @Builder @NoArgsConstructor @AllArgsConstructor` en DTOs y entidades.
 - **Separar DTO de entidad** en todos los casos. Mappers en `mapper/`.
 - **Mensajes de error siempre en español** y en snake/camel según el DTO.
@@ -735,4 +735,3 @@ Marca cada ítem. Al final deben estar los 20 en verde.
 ---
 
 *Documento generado tras auditar el repositorio completo: 33 archivos frontend, 4 microservicios Spring Boot con 96 clases Java, 6 migraciones Flyway, 4 archivos de infraestructura y la definición del sistema de diseño.*
-

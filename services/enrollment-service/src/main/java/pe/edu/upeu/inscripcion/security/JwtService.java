@@ -1,3 +1,4 @@
+
 package pe.edu.upeu.inscripcion.security;
 
 import io.jsonwebtoken.Claims;
@@ -14,9 +15,10 @@ public class JwtService {
 
     @Value("${jwt.secret}")
     private String secret;
-
     private SecretKey getKey() {
-        return Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
+        return Keys.hmacShaKeyFor(
+                secret.getBytes(StandardCharsets.UTF_8)
+        );
     }
 
     public String extraerCorreo(String token) {
@@ -32,6 +34,10 @@ public class JwtService {
             extraerClaims(token);
             return true;
         } catch (Exception e) {
+            System.err.println(
+                    "JWT rechazado: "
+                    + e.getClass().getSimpleName()
+            );
             return false;
         }
     }

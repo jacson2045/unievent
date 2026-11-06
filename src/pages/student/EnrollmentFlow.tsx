@@ -1,9 +1,13 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Check, ArrowRight, ArrowLeft, User, FileText, CreditCard, CheckCircle, QrCode } from "lucide-react";
 import Button from "../../components/ui/Button";
-import { events } from "../../data/mockData";
+import { getEventById } from "../../api/eventsApi";
+import type { BackendEvent } from "../../types/event";
 
-interface Props { onNavigate: (p: string) => void }
+interface Props {
+  onNavigate: (p: string) => void;
+  eventId: number | null;
+}
 
 const STEPS = [
   { label: "Datos", icon: <User size={16} /> },
@@ -20,11 +24,52 @@ const METHODS = [
   { id: "card", label: "Tarjeta", color: "from-slate-700 to-slate-900", desc: "Visa / Mastercard" },
 ];
 
-export default function EnrollmentFlow({ onNavigate }: Props) {
+export default function EnrollmentFlow({ onNavigate, eventId }: Props) {
   const [step, setStep] = useState(0);
   const [method, setMethod] = useState("yape");
   const [loading, setLoading] = useState(false);
-  const ev = events[0];
+  const [ev, setEv] = useState<BackendEvent | null>(null);
+  const [eventLoading, setEventLoading] = useState(true);
+  const [eventError, setEventError] = useState("");
+
+  useEffect(() => {
+    let activo = true;
+
+    if (eventId === null) {
+      setEv(null);
+      setEventError("No se seleccionó ningún evento.");
+      setEventLoading(false);
+      return () => { activo = false; };
+    }
+
+    setEventLoading(true);
+    setEventError("");
+
+    getEventById(eventId)
+      .then((evento) => {
+        if (activo) setEv(evento);
+      })
+      .catch((error: unknown) => {
+        if (activo) {
+          setEventError(
+            error instanceof Error ? error.message : "No se pudo cargar el evento."
+          );
+        }
+      })
+      .finally(() => {
+        if (activo) setEventLoading(false);
+      });
+
+    return () => { activo = false; };
+  }, [eventId]);
+
+  const precio = Number(ev?.precio ?? 0);
+  const fechaEvento = ev
+    ? new Date(ev.fecha).toLocaleString("es-PE", {
+        dateStyle: "long",
+        timeStyle: "short",
+      })
+    : "";
 
   const next = async () => {
     if (step === 3) {
@@ -36,11 +81,24 @@ export default function EnrollmentFlow({ onNavigate }: Props) {
   };
   const back = () => setStep(s => Math.max(s - 1, 0));
 
+  if (eventLoading) {
+    return <div className="max-w-2xl mx-auto p-8 text-center">Cargando evento...</div>;
+  }
+
+  if (eventError || !ev) {
+    return (
+      <div className="max-w-2xl mx-auto p-8 text-center">
+        <p className="text-red-600 mb-4">{eventError || "No se encontró el evento."}</p>
+        <Button onClick={() => onNavigate("explore-events")}>Volver a eventos</Button>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-2xl mx-auto flex flex-col gap-6">
       <div>
         <h2 className="text-xl font-bold font-display text-slate-900 mb-0.5">Inscripción al evento</h2>
-        <p className="text-sm text-slate-500">{ev.title}</p>
+        <p className="text-sm text-slate-500">{ev.nombre}</p>
       </div>
 
       {/* Progress */}
@@ -94,19 +152,19 @@ export default function EnrollmentFlow({ onNavigate }: Props) {
             <h3 className="font-bold text-slate-900 font-display mb-4">Confirma tu inscripción</h3>
             <div className="p-4 bg-primary-50 border border-primary-100 rounded-xl mb-4">
               <div className="flex gap-4">
-                <img src={ev.image} alt={ev.title} className="w-16 h-16 rounded-xl object-cover flex-shrink-0" />
+                <div className="w-16 h-16 rounded-xl bg-primary-100 flex items-center justify-center flex-shrink-0"><FileText size={24} className="text-primary-700" /></div>
                 <div>
-                  <p className="font-semibold text-slate-900 text-sm">{ev.title}</p>
-                  <p className="text-xs text-slate-500">{ev.date} · {ev.time}</p>
-                  <p className="text-xs text-slate-500">{ev.location}</p>
+                  <p className="font-semibold text-slate-900 text-sm">{ev.nombre}</p>
+                  <p className="text-xs text-slate-500">{fechaEvento}</p>
+                  <p className="text-xs text-slate-500">{ev.lugar}</p>
                 </div>
               </div>
             </div>
             <div className="flex flex-col gap-2">
               {[
-                { label: "Precio base", value: `S/ ${ev.price.toFixed(2)}` },
-                { label: "Descuento estudiante (10%)", value: "-S/ 4.50", cls: "text-green-600" },
-                { label: "Total a pagar", value: "S/ 40.50", cls: "text-primary-700 font-bold text-base" },
+                { label: "Precio del evento", value: `S/ ${precio.toFixed(2)}` },
+
+                { label: "Total a pagar", value: `S/ ${precio.toFixed(2)}`, cls: "text-primary-700 font-bold text-base" },
               ].map(({ label, value, cls }) => (
                 <div key={label} className="flex justify-between py-2 border-b border-slate-50 last:border-0">
                   <span className="text-sm text-slate-600">{label}</span>
@@ -159,7 +217,7 @@ export default function EnrollmentFlow({ onNavigate }: Props) {
               </div>
             </div>
             <div className="flex flex-col gap-1 text-sm text-slate-600 mb-4">
-              <span className="text-2xl font-bold text-slate-900 font-display">S/ 40.50</span>
+              <span className="text-2xl font-bold text-slate-900 font-display">S/ {precio.toFixed(2)}</span>
               <span className="text-xs text-slate-400">Código de operación: OPR-2026-084729</span>
             </div>
             <div className="bg-amber-50 border border-amber-100 rounded-xl px-4 py-2 text-xs text-amber-700 inline-flex items-center gap-2">
@@ -179,9 +237,9 @@ export default function EnrollmentFlow({ onNavigate }: Props) {
             <p className="text-xs text-slate-400 font-mono mb-6">TXN-2026-084729 · {new Date().toLocaleDateString("es-PE")}</p>
             <div className="bg-slate-50 rounded-xl p-4 text-sm text-left mb-6 flex flex-col gap-2">
               {[
-                ["Evento", ev.title],
-                ["Fecha", ev.date],
-                ["Monto", "S/ 40.50"],
+                ["Evento", ev.nombre],
+                ["Fecha", fechaEvento],
+                ["Monto", `S/ ${precio.toFixed(2)}`],
                 ["Método", METHODS.find(m => m.id === method)?.label ?? ""],
               ].map(([k, v]) => (
                 <div key={k} className="flex justify-between">

@@ -1,9 +1,12 @@
 import { getToken, clearAuth } from "../utils/auth";
 
+const GATEWAY_URL = "http://localhost:8000";
+
 const BASE_URLS = {
-  auth: "http://localhost:8082",
-  event: "http://localhost:8080",
-  enrollment: "http://localhost:8083",
+  auth: GATEWAY_URL,
+  event: GATEWAY_URL,
+  enrollment: GATEWAY_URL,
+  gateway: GATEWAY_URL,
 } as const;
 
 export type ServiceName = keyof typeof BASE_URLS;
@@ -62,7 +65,7 @@ export async function apiRequest<T>(
     if (token) {
       requestHeaders["Authorization"] = `Bearer ${token}`;
     } else {
-      throw new HttpError("No hay sesión iniciada", 401);
+      throw new HttpError("No hay sesiÃ³n iniciada", 401);
     }
   }
 
@@ -109,7 +112,7 @@ export async function apiRequest<T>(
     if (err instanceof HttpError) throw err;
     if (err instanceof TypeError) {
       throw new HttpError(
-        "No se pudo conectar con el servidor. Verifica que los microservicios estén ejecutándose.",
+        "No se pudo conectar con el servidor. Verifica que los microservicios estÃ©n ejecutÃ¡ndose.",
         0,
       );
     }

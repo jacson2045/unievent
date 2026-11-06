@@ -1,0 +1,27 @@
+
+server:
+  port: 8082
+
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:15435/auth_db
+    username: unievent
+    password: unievent123
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: true
+  flyway:
+    enabled: true
+
+jwt:
+  secret: ${JWT_SECRET}
+  
+logging:
+  level:
+    org.springframework.security: TRACE
+    org.springframework.security.authorization: TRACE
+    org.springframework.security.web.access: TRACE
+    org.springframework.web: DEBUG
+    pe.edu.upeu.auth: DEBUG
+

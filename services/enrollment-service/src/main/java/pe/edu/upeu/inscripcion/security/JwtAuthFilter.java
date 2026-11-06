@@ -22,21 +22,31 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     private final JwtService jwtService;
 
     @Override
-    protected void doFilterInternal(@NonNull HttpServletRequest request,
-                                     @NonNull HttpServletResponse response,
-                                     @NonNull FilterChain filterChain) throws ServletException, IOException {
+    protected void doFilterInternal(
+            @NonNull HttpServletRequest request,
+            @NonNull HttpServletResponse response,
+            @NonNull FilterChain filterChain
+    ) throws ServletException, IOException {
 
         String header = request.getHeader("Authorization");
 
         if (header != null && header.startsWith("Bearer ")) {
+
             String token = header.substring(7);
 
             if (jwtService.esTokenValido(token)) {
+
                 String correo = jwtService.extraerCorreo(token);
                 String rol = jwtService.extraerRol(token);
 
                 var authority = new SimpleGrantedAuthority("ROLE_" + rol);
-                var auth = new UsernamePasswordAuthenticationToken(correo, null, List.of(authority));
+
+                var auth = new UsernamePasswordAuthenticationToken(
+                        correo,
+                        null,
+                        List.of(authority)
+                );
+
                 SecurityContextHolder.getContext().setAuthentication(auth);
             }
         }
