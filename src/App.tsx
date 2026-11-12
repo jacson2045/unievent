@@ -337,7 +337,7 @@ export default function App() {
       break
 
     case "admin-dashboard":
-      content = <AdminDashboard />
+      content = <AdminDashboard onNavigate={handleNavigate} />
       break
     case "user-management":
       content = <UserManagement />

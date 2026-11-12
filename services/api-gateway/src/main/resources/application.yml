@@ -37,6 +37,37 @@ spring:
               uri: http://localhost:8084
               predicates:
                 - Path=/api/notificaciones/**
+            # Monitoreo: solo el health check de cada servicio (lo usa el panel del administrador).
+            - id: monitor-auth
+              uri: http://localhost:8082
+              predicates:
+                - Path=/monitor/auth-service/health
+              filters:
+                - SetPath=/actuator/health
+            - id: monitor-event
+              uri: http://localhost:8080
+              predicates:
+                - Path=/monitor/event-service/health
+              filters:
+                - SetPath=/actuator/health
+            - id: monitor-enrollment
+              uri: http://localhost:8083
+              predicates:
+                - Path=/monitor/enrollment-service/health
+              filters:
+                - SetPath=/actuator/health
+            - id: monitor-notification
+              uri: http://localhost:8084
+              predicates:
+                - Path=/monitor/notification-service/health
+              filters:
+                - SetPath=/actuator/health
+            - id: monitor-config
+              uri: http://localhost:18888
+              predicates:
+                - Path=/monitor/config-server/health
+              filters:
+                - SetPath=/actuator/health
 
 management:
   endpoints:

@@ -56,6 +56,7 @@ public class SecurityConfig {
                     "/api/auth/registro",
                     "/error"
                 ).permitAll()
+                .requestMatchers("/api/auth/admin/**").hasRole("ADMIN")
                 // Perfil y cambio de contraseña requieren un JWT válido.
                 .anyRequest().authenticated()
             )
