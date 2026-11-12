@@ -102,7 +102,8 @@ export default function EventDetail({ onNavigate, eventId }: Props) {
     : 0;
   const isFree = Number(event.precio) <= 0;
   const isActive = event.estado === "ACTIVO";
-  const canEnroll = isActive && !soldOut;
+  const isPast = new Date(event.fecha).getTime() < Date.now();
+  const canEnroll = isActive && !soldOut && !isPast;
   const dateRange = event.fechaFin
     ? `${formatDate(event.fecha)} — ${formatDate(event.fechaFin)}`
     : formatDate(event.fecha);
@@ -137,6 +138,8 @@ export default function EventDetail({ onNavigate, eventId }: Props) {
               <div className="flex flex-wrap gap-2 mb-3">
                 {!isActive ? (
                   <Badge variant="rejected">{event.estado}</Badge>
+                ) : isPast ? (
+                  <Badge variant="pending">Finalizado</Badge>
                 ) : soldOut ? (
                   <Badge variant="rejected">Agotado</Badge>
                 ) : (
@@ -277,7 +280,7 @@ export default function EventDetail({ onNavigate, eventId }: Props) {
               className="mb-3"
               disabled={!canEnroll}
             >
-              {!isActive
+              {!isActive || isPast
                 ? "Inscripciones cerradas"
                 : soldOut
                   ? "Sin cupos disponibles"

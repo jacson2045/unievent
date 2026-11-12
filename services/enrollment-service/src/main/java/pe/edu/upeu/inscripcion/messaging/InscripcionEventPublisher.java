@@ -8,6 +8,7 @@ import pe.edu.upeu.inscripcion.entity.Inscripcion;
 import pe.edu.upeu.inscripcion.entity.Pago;
 import tools.jackson.databind.json.JsonMapper;
 
+import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.UUID;
@@ -38,10 +39,11 @@ public class InscripcionEventPublisher {
                     InscripcionConfirmadaEvent.TIPO,
                     Instant.now().toString(),
                     inscripcion.getId(),
-                    pago.getId(),
+                    // Evento gratuito: no hay pago asociado.
+                    pago != null ? pago.getId() : null,
                     inscripcion.getEventoId(),
                     inscripcion.getEstudianteCorreo(),
-                    pago.getMonto());
+                    pago != null ? pago.getMonto() : BigDecimal.ZERO);
 
             String payload = JSON.writeValueAsString(evento);
 

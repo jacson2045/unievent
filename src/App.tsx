@@ -10,6 +10,7 @@ import StudentDashboard from "./pages/student/StudentDashboard"
 import ExploreEvents from "./pages/student/ExploreEvents"
 import EventDetail from "./pages/student/EventDetail"
 import EnrollmentFlow from "./pages/student/EnrollmentFlow"
+import PaymentResult from "./pages/student/PaymentResult"
 import MyEnrollments from "./pages/student/MyEnrollments"
 import AttendancePage from "./pages/student/AttendancePage"
 import NotificationsPage from "./pages/student/NotificationsPage"
@@ -44,7 +45,7 @@ const roleLabels: Record<Role, string> = {
 const ROLE_ALLOWED_PAGES: Record<Role, string[]> = {
   student: [
     "student-dashboard", "explore-events", "event-detail",
-    "enrollment-flow", "my-enrollments", "my-payments",
+    "enrollment-flow", "payment-result", "my-enrollments", "my-payments",
     "my-attendance", "notifications", "profile"
   ],
   organizer: [
@@ -76,6 +77,7 @@ const PAGE_TITLES: Record<string, string> = {
   "explore-events": "Explorar eventos",
   "event-detail": "Detalle del evento",
   "enrollment-flow": "Inscripción",
+  "payment-result": "Resultado del pago",
   "my-enrollments": "Mis inscripciones",
   "my-payments": "Mis pagos",
   "my-attendance": "Mis asistencias",
@@ -239,6 +241,9 @@ export default function App() {
       break
     case "enrollment-flow":
       content = <EnrollmentFlow onNavigate={handleNavigate} eventId={selectedEventId} />
+      break
+    case "payment-result":
+      content = <PaymentResult onNavigate={handleNavigate} />
       break
     case "my-enrollments":
       content = <MyEnrollments onNavigate={handleNavigate} />

@@ -10,6 +10,7 @@ import com.mercadopago.resources.payment.Payment;
 import com.mercadopago.resources.preference.Preference;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import pe.edu.upeu.inscripcion.dto.EstadoPagoResponse;
@@ -25,6 +26,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Optional;
 
 @Slf4j
 @Service
@@ -35,6 +37,9 @@ public class PagoService {
     private final PagoRepository pagoRepository;
     private final EventoConsultaService eventoConsultaService;
     private final InscripcionEventPublisher eventPublisher;
+
+    @Value("${app.frontend-url:http://localhost:8443}")
+    private String frontendUrl;
 
     public PreferenciaResponse crearPreferencia(
             Long inscripcionId,
@@ -70,10 +75,11 @@ public class PagoService {
                     "La inscripcion ya tiene un pago aprobado");
         }
 
-        if (pagoRepository.existsByInscripcionIdAndEstado(
-                inscripcionId, "PENDING")) {
-            throw new IllegalStateException(
-                    "Ya existe un pago pendiente para esta inscripcion");
+        // Idempotencia: si ya hay un checkout pendiente, se devuelve el mismo
+        // en lugar de crear otra preferencia (el estudiante volvió atrás).
+        Optional<PreferenciaResponse> pendiente = reutilizarPagoPendiente(inscripcionId);
+        if (pendiente.isPresent()) {
+            return pendiente.get();
         }
 
         EventoClienteResponse evento =
@@ -82,6 +88,11 @@ public class PagoService {
                         .orElseThrow(() ->
                                 new NoSuchElementException(
                                         "El evento ya no existe"));
+
+        if (evento.esGratuito()) {
+            throw new IllegalStateException(
+                    "Este evento es gratuito y no requiere pago");
+        }
 
         Pago pago = Pago.builder()
                 .inscripcion(inscripcion)
@@ -114,9 +125,9 @@ public class PagoService {
                                     pago.getId().toString())
                             .backUrls(
                                     PreferenceBackUrlsRequest.builder()
-                                            .success("http://localhost:4200/pago-exitoso")
-                                            .pending("http://localhost:4200/pago-pendiente")
-                                            .failure("http://localhost:4200/pago-fallido")
+                                            .success(urlRetorno(inscripcionId))
+                                            .pending(urlRetorno(inscripcionId))
+                                            .failure(urlRetorno(inscripcionId))
                                             .build())
                             .build();
 
@@ -179,9 +190,59 @@ public class PagoService {
 
         return EstadoPagoResponse.builder()
                 .pagoId(pago.getId())
+                .inscripcionId(inscripcionId)
                 .estado(pago.getEstado())
+                .estadoInscripcion(pago.getInscripcion().getEstado())
+                .monto(pago.getMonto())
+                .metodo(pago.getMetodo())
                 .transactionCode(pago.getTransactionCode())
                 .build();
+    }
+
+    /** Página del frontend a la que Mercado Pago devuelve al estudiante. */
+    private String urlRetorno(Long inscripcionId) {
+        return frontendUrl + "/?page=payment-result&inscripcionId=" + inscripcionId;
+    }
+
+    private Optional<PreferenciaResponse> reutilizarPagoPendiente(Long inscripcionId) {
+        Optional<Pago> ultimo = pagoRepository.findTopByInscripcionIdOrderByIdDesc(inscripcionId);
+        if (ultimo.isEmpty() || !"PENDING".equals(ultimo.get().getEstado())) {
+            return Optional.empty();
+        }
+
+        Pago pago = ultimo.get();
+        // Antes de reutilizarlo, se sincroniza con Mercado Pago: quizá ya se pagó o se rechazó.
+        actualizarEstadoDesdeMercadoPago(pago);
+
+        if ("APPROVED".equals(pago.getEstado())) {
+            throw new IllegalStateException(
+                    "La inscripcion ya tiene un pago aprobado");
+        }
+        if (!"PENDING".equals(pago.getEstado())) {
+            throw new IllegalStateException(
+                    "La inscripcion fue cancelada por un pago rechazado. "
+                    + "Crea una nueva inscripcion para volver a intentarlo");
+        }
+        if (pago.getPreferenceId() == null) {
+            throw new IllegalStateException(
+                    "Ya existe un pago pendiente para esta inscripcion");
+        }
+
+        try {
+            Preference preference = new PreferenceClient().get(pago.getPreferenceId());
+            return Optional.of(PreferenciaResponse.builder()
+                    .pagoId(pago.getId())
+                    .monto(pago.getMonto())
+                    .estado(pago.getEstado())
+                    .checkoutUrl(preference.getSandboxInitPoint())
+                    .build());
+        } catch (Exception e) {
+            log.error("No se pudo recuperar la preferencia {}: {}",
+                    pago.getPreferenceId(), e.getMessage());
+            throw new IllegalStateException(
+                    "Ya existe un pago pendiente para esta inscripcion. "
+                    + "Consulta su estado antes de volver a intentarlo.");
+        }
     }
 
     private void actualizarEstadoDesdeMercadoPago(Pago pago) {

@@ -13,4 +13,8 @@ public interface InscripcionRepository extends JpaRepository<Inscripcion, Long> 
 
     boolean existsByEstudianteCorreoAndEventoIdAndEstadoNot(
         String estudianteCorreo, Long eventoId, String estado);
+
+    /** Inscripción vigente (no cancelada) del estudiante en el evento, si existe. */
+    java.util.Optional<Inscripcion> findFirstByEstudianteCorreoAndEventoIdAndEstadoNot(
+        String estudianteCorreo, Long eventoId, String estado);
 }

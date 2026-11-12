@@ -37,7 +37,10 @@ public class NotificacionService {
         eventoProcesadoRepository.saveAndFlush(
                 new EventoProcesado(evento.eventId(), evento.tipo(), LocalDateTime.now()));
 
-        String monto = evento.monto() == null ? "0.00" : evento.monto().toPlainString();
+        boolean gratuito = evento.monto() == null || evento.monto().signum() <= 0;
+        String detallePago = gratuito
+                ? "Evento gratuito, no requiere pago."
+                : "Pago registrado por S/ " + evento.monto().toPlainString() + ".";
 
         notificacionRepository.save(Notificacion.builder()
                 .destinatarioCorreo(evento.estudianteCorreo())
@@ -45,7 +48,7 @@ public class NotificacionService {
                 .titulo("Inscripción confirmada")
                 .mensaje("Tu inscripción #" + evento.inscripcionId()
                         + " al evento #" + evento.eventoId()
-                        + " fue confirmada. Pago registrado por S/ " + monto + ".")
+                        + " fue confirmada. " + detallePago)
                 .inscripcionId(evento.inscripcionId())
                 .eventoId(evento.eventoId())
                 .build());

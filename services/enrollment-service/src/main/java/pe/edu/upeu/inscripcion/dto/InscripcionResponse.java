@@ -10,6 +10,8 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class InscripcionResponse {
     private Long id;
+    /** true si la inscripción sigue PENDIENTE y el evento tiene costo. */
+    private Boolean requierePago;
     private String estudianteCorreo;
     private Long eventoId;
     private String estado;

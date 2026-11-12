@@ -36,6 +36,11 @@ public class GlobalExceptionHandler {
             return build(HttpStatus.FORBIDDEN, message);
         }
 
+        // Fallback del circuit breaker: el servicio dependiente no responde.
+        if (message != null && message.contains("no está disponible")) {
+            return build(HttpStatus.SERVICE_UNAVAILABLE, message);
+        }
+
         return build(HttpStatus.CONFLICT, message);
     }
 

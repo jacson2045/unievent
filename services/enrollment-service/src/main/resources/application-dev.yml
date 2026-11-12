@@ -74,3 +74,6 @@ resilience4j:
         permitted-number-of-calls-in-half-open-state: 3
         automatic-transition-from-open-to-half-open-enabled: true
         register-health-indicator: true
+app:
+  # Pagina del frontend a la que Mercado Pago devuelve al estudiante
+  frontend-url: ${FRONTEND_URL:http://localhost:8443}

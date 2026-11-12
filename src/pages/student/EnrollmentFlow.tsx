@@ -1,36 +1,60 @@
 import React, { useEffect, useState } from "react";
-import { Check, ArrowRight, ArrowLeft, User, FileText, CreditCard, CheckCircle, QrCode } from "lucide-react";
+import {
+  Check,
+  ArrowRight,
+  ArrowLeft,
+  User,
+  FileText,
+  CreditCard,
+  CheckCircle,
+  AlertCircle,
+  ExternalLink,
+  RefreshCw,
+} from "lucide-react";
 import Button from "../../components/ui/Button";
 import { getEventById } from "../../api/eventsApi";
+import {
+  createEnrollment,
+  getPaymentStatus,
+  startPayment,
+} from "../../api/enrollmentApi";
+import { HttpError } from "../../api/client";
+import { getUser } from "../../utils/auth";
 import type { BackendEvent } from "../../types/event";
+import type { Enrollment, PaymentStatusResponse } from "../../types/enrollment";
 
 interface Props {
   onNavigate: (p: string) => void;
   eventId: number | null;
 }
 
-const STEPS = [
-  { label: "Datos", icon: <User size={16} /> },
-  { label: "Confirmar", icon: <FileText size={16} /> },
-  { label: "Pago", icon: <CreditCard size={16} /> },
-  { label: "Verificación", icon: <QrCode size={16} /> },
-  { label: "Listo", icon: <CheckCircle size={16} /> },
-];
+type StepId = "data" | "confirm" | "payment" | "done";
 
-const METHODS = [
-  { id: "yape", label: "Yape", color: "from-purple-600 to-purple-800", desc: "Pago con QR" },
-  { id: "plin", label: "Plin", color: "from-green-500 to-teal-600", desc: "Pago con QR" },
-  { id: "bcp", label: "BCP", color: "from-blue-600 to-blue-800", desc: "Transferencia bancaria" },
-  { id: "card", label: "Tarjeta", color: "from-slate-700 to-slate-900", desc: "Visa / Mastercard" },
-];
+const STEP_META: Record<StepId, { label: string; icon: React.ReactNode }> = {
+  data: { label: "Datos", icon: <User size={16} /> },
+  confirm: { label: "Confirmar", icon: <FileText size={16} /> },
+  payment: { label: "Pago", icon: <CreditCard size={16} /> },
+  done: { label: "Listo", icon: <CheckCircle size={16} /> },
+};
+
+function errorMessage(err: unknown, fallback: string): string {
+  if (err instanceof HttpError || err instanceof Error) return err.message;
+  return fallback;
+}
 
 export default function EnrollmentFlow({ onNavigate, eventId }: Props) {
-  const [step, setStep] = useState(0);
-  const [method, setMethod] = useState("yape");
-  const [loading, setLoading] = useState(false);
+  const user = getUser();
+
   const [ev, setEv] = useState<BackendEvent | null>(null);
   const [eventLoading, setEventLoading] = useState(true);
   const [eventError, setEventError] = useState("");
+
+  const [step, setStep] = useState<StepId>("data");
+  const [enrollment, setEnrollment] = useState<Enrollment | null>(null);
+  const [payment, setPayment] = useState<PaymentStatusResponse | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [actionError, setActionError] = useState("");
+  const [info, setInfo] = useState("");
 
   useEffect(() => {
     let activo = true;
@@ -39,7 +63,9 @@ export default function EnrollmentFlow({ onNavigate, eventId }: Props) {
       setEv(null);
       setEventError("No se seleccionó ningún evento.");
       setEventLoading(false);
-      return () => { activo = false; };
+      return () => {
+        activo = false;
+      };
     }
 
     setEventLoading(true);
@@ -50,20 +76,24 @@ export default function EnrollmentFlow({ onNavigate, eventId }: Props) {
         if (activo) setEv(evento);
       })
       .catch((error: unknown) => {
-        if (activo) {
-          setEventError(
-            error instanceof Error ? error.message : "No se pudo cargar el evento."
-          );
-        }
+        if (activo) setEventError(errorMessage(error, "No se pudo cargar el evento."));
       })
       .finally(() => {
         if (activo) setEventLoading(false);
       });
 
-    return () => { activo = false; };
+    return () => {
+      activo = false;
+    };
   }, [eventId]);
 
   const precio = Number(ev?.precio ?? 0);
+  const isFree = precio <= 0;
+  const steps: StepId[] = isFree
+    ? ["data", "confirm", "done"]
+    : ["data", "confirm", "payment", "done"];
+  const stepIndex = steps.indexOf(step);
+
   const fechaEvento = ev
     ? new Date(ev.fecha).toLocaleString("es-PE", {
         dateStyle: "long",
@@ -71,18 +101,88 @@ export default function EnrollmentFlow({ onNavigate, eventId }: Props) {
       })
     : "";
 
-  const next = async () => {
-    if (step === 3) {
-      setLoading(true);
-      await new Promise(r => setTimeout(r, 1500));
-      setLoading(false);
-    }
-    setStep(s => Math.min(s + 1, 4));
+  const goTo = (next: StepId) => {
+    setActionError("");
+    setInfo("");
+    setStep(next);
   };
-  const back = () => setStep(s => Math.max(s - 1, 0));
+
+  /** Paso "Confirmar": crea la inscripción en enrollment-service. */
+  const confirmEnrollment = async () => {
+    if (!ev) return;
+    setBusy(true);
+    setActionError("");
+    try {
+      const created = await createEnrollment(ev.id);
+      setEnrollment(created);
+      if (created.estado === "CONFIRMADA") {
+        goTo("done");
+      } else {
+        goTo("payment");
+      }
+    } catch (err) {
+      setActionError(errorMessage(err, "No se pudo registrar la inscripción."));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  /** Paso "Pago": pide la preferencia y redirige al checkout de Mercado Pago. */
+  const goToCheckout = async () => {
+    if (!enrollment) return;
+    setBusy(true);
+    setActionError("");
+    try {
+      const pref = await startPayment(enrollment.id);
+      if (!pref.checkoutUrl) {
+        throw new Error("Mercado Pago no devolvió una URL de pago.");
+      }
+      window.location.href = pref.checkoutUrl;
+    } catch (err) {
+      setActionError(errorMessage(err, "No se pudo iniciar el pago."));
+      setBusy(false);
+    }
+  };
+
+  /** Consulta manual del estado (por si el estudiante pagó en otra pestaña). */
+  const verifyPayment = async () => {
+    if (!enrollment) return;
+    setBusy(true);
+    setActionError("");
+    setInfo("");
+    try {
+      const status = await getPaymentStatus(enrollment.id);
+      setPayment(status);
+      if (status.estado === "APPROVED") {
+        setEnrollment({ ...enrollment, estado: "CONFIRMADA", requierePago: false });
+        goTo("done");
+      } else if (status.estado === "PENDING") {
+        setInfo("Tu pago aún figura como pendiente. Si ya pagaste, espera unos segundos y vuelve a verificar.");
+      } else {
+        setActionError(
+          "El pago fue rechazado o cancelado y la inscripción se anuló. Puedes volver a inscribirte.",
+        );
+        setEnrollment(null);
+        setStep("confirm");
+      }
+    } catch (err) {
+      if (err instanceof HttpError && err.status === 404) {
+        setInfo("Todavía no iniciaste el pago. Usa el botón «Pagar con Mercado Pago».");
+      } else {
+        setActionError(errorMessage(err, "No se pudo verificar el pago."));
+      }
+    } finally {
+      setBusy(false);
+    }
+  };
 
   if (eventLoading) {
-    return <div className="max-w-2xl mx-auto p-8 text-center">Cargando evento...</div>;
+    return (
+      <div className="max-w-2xl mx-auto p-8 text-center text-slate-600">
+        <RefreshCw className="animate-spin mx-auto mb-3 text-primary-600" size={28} />
+        Cargando evento...
+      </div>
+    );
   }
 
   if (eventError || !ev) {
@@ -97,62 +197,79 @@ export default function EnrollmentFlow({ onNavigate, eventId }: Props) {
   return (
     <div className="max-w-2xl mx-auto flex flex-col gap-6">
       <div>
-        <h2 className="text-xl font-bold font-display text-slate-900 mb-0.5">Inscripción al evento</h2>
+        <h2 className="text-xl font-bold font-display text-slate-900 mb-0.5">
+          Inscripción al evento
+        </h2>
         <p className="text-sm text-slate-500">{ev.nombre}</p>
       </div>
 
-      {/* Progress */}
+      {/* Progreso */}
       <div className="bg-white rounded-2xl border border-slate-100 p-5 shadow-[0_1px_3px_0_rgb(0_0_0/0.08)]">
         <div className="flex items-center">
-          {STEPS.map((s, i) => (
-            <React.Fragment key={s.label}>
+          {steps.map((id, i) => (
+            <React.Fragment key={id}>
               <div className="flex flex-col items-center gap-1">
-                <div className={[
-                  "w-9 h-9 rounded-full flex items-center justify-center transition-all",
-                  i < step ? "bg-green-500 text-white" : i === step ? "bg-primary-600 text-white ring-4 ring-primary-100" : "bg-slate-100 text-slate-400",
-                ].join(" ")}>
-                  {i < step ? <Check size={16} /> : s.icon}
+                <div
+                  className={[
+                    "w-9 h-9 rounded-full flex items-center justify-center transition-all",
+                    i < stepIndex
+                      ? "bg-green-500 text-white"
+                      : i === stepIndex
+                        ? "bg-primary-600 text-white ring-4 ring-primary-100"
+                        : "bg-slate-100 text-slate-400",
+                  ].join(" ")}
+                >
+                  {i < stepIndex ? <Check size={16} /> : STEP_META[id].icon}
                 </div>
-                <span className={`text-[10px] font-medium hidden sm:block ${i === step ? "text-primary-600" : i < step ? "text-green-600" : "text-slate-400"}`}>
-                  {s.label}
+                <span
+                  className={`text-[10px] font-medium hidden sm:block ${i === stepIndex ? "text-primary-600" : i < stepIndex ? "text-green-600" : "text-slate-400"}`}
+                >
+                  {STEP_META[id].label}
                 </span>
               </div>
-              {i < STEPS.length - 1 && (
-                <div className={`flex-1 h-0.5 mx-1 transition-colors ${i < step ? "bg-green-400" : "bg-slate-200"}`} />
+              {i < steps.length - 1 && (
+                <div
+                  className={`flex-1 h-0.5 mx-1 transition-colors ${i < stepIndex ? "bg-green-400" : "bg-slate-200"}`}
+                />
               )}
             </React.Fragment>
           ))}
         </div>
       </div>
 
-      {/* Step content */}
+      {/* Contenido del paso */}
       <div className="bg-white rounded-2xl border border-slate-100 p-6 shadow-[0_1px_3px_0_rgb(0_0_0/0.08)]">
-        {step === 0 && (
+        {step === "data" && (
           <div>
             <h3 className="font-bold text-slate-900 font-display mb-4">Confirma tus datos</h3>
             <div className="flex flex-col gap-3">
               {[
-                { label: "Nombre completo", value: "Ana Lucía Ramírez Torres" },
-                { label: "Correo institucional", value: "a.ramirez@uni.edu.pe" },
-                { label: "Código universitario", value: "20211234" },
-                { label: "Facultad", value: "Ingeniería de Sistemas" },
+                { label: "Nombre completo", value: user?.nombreCompleto ?? "—" },
+                { label: "Correo institucional", value: user?.correo ?? "—" },
               ].map(({ label, value }) => (
-                <div key={label} className="flex justify-between py-2.5 border-b border-slate-50 last:border-0">
+                <div
+                  key={label}
+                  className="flex justify-between py-2.5 border-b border-slate-50 last:border-0"
+                >
                   <span className="text-sm text-slate-500">{label}</span>
                   <span className="text-sm font-semibold text-slate-900">{value}</span>
                 </div>
               ))}
             </div>
-            <p className="text-xs text-slate-400 mt-4 bg-slate-50 p-3 rounded-xl">Si tus datos no son correctos, actualízalos en tu perfil antes de continuar.</p>
+            <p className="text-xs text-slate-400 mt-4 bg-slate-50 p-3 rounded-xl">
+              La inscripción quedará registrada a nombre de esta cuenta.
+            </p>
           </div>
         )}
 
-        {step === 1 && (
+        {step === "confirm" && (
           <div>
             <h3 className="font-bold text-slate-900 font-display mb-4">Confirma tu inscripción</h3>
             <div className="p-4 bg-primary-50 border border-primary-100 rounded-xl mb-4">
               <div className="flex gap-4">
-                <div className="w-16 h-16 rounded-xl bg-primary-100 flex items-center justify-center flex-shrink-0"><FileText size={24} className="text-primary-700" /></div>
+                <div className="w-16 h-16 rounded-xl bg-primary-100 flex items-center justify-center flex-shrink-0">
+                  <FileText size={24} className="text-primary-700" />
+                </div>
                 <div>
                   <p className="font-semibold text-slate-900 text-sm">{ev.nombre}</p>
                   <p className="text-xs text-slate-500">{fechaEvento}</p>
@@ -160,87 +277,60 @@ export default function EnrollmentFlow({ onNavigate, eventId }: Props) {
                 </div>
               </div>
             </div>
-            <div className="flex flex-col gap-2">
-              {[
-                { label: "Precio del evento", value: `S/ ${precio.toFixed(2)}` },
-
-                { label: "Total a pagar", value: `S/ ${precio.toFixed(2)}`, cls: "text-primary-700 font-bold text-base" },
-              ].map(({ label, value, cls }) => (
-                <div key={label} className="flex justify-between py-2 border-b border-slate-50 last:border-0">
-                  <span className="text-sm text-slate-600">{label}</span>
-                  <span className={`text-sm font-semibold ${cls || "text-slate-900"}`}>{value}</span>
-                </div>
-              ))}
+            <div className="flex justify-between py-2">
+              <span className="text-sm text-slate-600">Total a pagar</span>
+              <span className="text-base font-bold text-primary-700">
+                {isFree ? "Gratuito" : `S/ ${precio.toFixed(2)}`}
+              </span>
             </div>
-          </div>
-        )}
-
-        {step === 2 && (
-          <div>
-            <h3 className="font-bold text-slate-900 font-display mb-4">Selecciona método de pago</h3>
-            <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 p-3 rounded-xl mb-4">
-              ⚠ Pago simulado para fines académicos — no se procesa dinero real.
+            <p className="text-xs text-slate-400 mt-2">
+              {isFree
+                ? "Al confirmar, tu inscripción quedará registrada de inmediato."
+                : "Al confirmar se reserva tu inscripción; quedará confirmada cuando se apruebe el pago."}
             </p>
-            <div className="grid grid-cols-2 gap-3">
-              {METHODS.map(m => (
-                <button
-                  key={m.id}
-                  onClick={() => setMethod(m.id)}
-                  className={`p-4 rounded-xl border-2 text-left transition-all ${method === m.id ? "border-primary-500 bg-primary-50" : "border-slate-200 hover:border-slate-300"}`}
-                >
-                  <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${m.color} flex items-center justify-center mb-2`}>
-                    <CreditCard size={18} className="text-white" />
-                  </div>
-                  <p className="font-semibold text-sm text-slate-900">{m.label}</p>
-                  <p className="text-xs text-slate-500">{m.desc}</p>
-                  {method === m.id && <div className="absolute top-2 right-2 w-4 h-4 bg-primary-500 rounded-full flex items-center justify-center"><Check size={10} className="text-white" /></div>}
-                </button>
-              ))}
-            </div>
           </div>
         )}
 
-        {step === 3 && (
+        {step === "payment" && (
           <div className="text-center">
-            <h3 className="font-bold text-slate-900 font-display mb-2">Escanea el código QR</h3>
-            <p className="text-sm text-slate-500 mb-6">Usa tu app {method === "yape" ? "Yape" : method === "plin" ? "Plin" : "bancaria"} para pagar</p>
-            <div className="w-48 h-48 bg-slate-900 rounded-2xl mx-auto mb-4 flex items-center justify-center relative">
-              <div className="grid grid-cols-7 grid-rows-7 gap-0.5 p-3">
-                {Array.from({ length: 49 }).map((_, i) => (
-                  <div key={i} className={`w-4 h-4 rounded-sm ${Math.random() > 0.5 ? "bg-white" : "bg-transparent"}`} />
-                ))}
-              </div>
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center">
-                  <QrCode size={24} className="text-slate-900" />
-                </div>
-              </div>
-            </div>
-            <div className="flex flex-col gap-1 text-sm text-slate-600 mb-4">
-              <span className="text-2xl font-bold text-slate-900 font-display">S/ {precio.toFixed(2)}</span>
-              <span className="text-xs text-slate-400">Código de operación: OPR-2026-084729</span>
-            </div>
-            <div className="bg-amber-50 border border-amber-100 rounded-xl px-4 py-2 text-xs text-amber-700 inline-flex items-center gap-2">
-              <Clock size={12} />
-              Expira en 14:32
-            </div>
+            <h3 className="font-bold text-slate-900 font-display mb-2">Pago con Mercado Pago</h3>
+            <p className="text-sm text-slate-500 mb-6">
+              Serás redirigido al checkout seguro de Mercado Pago. Al terminar volverás
+              automáticamente a UniEvent Pay.
+            </p>
+            <p className="text-3xl font-bold text-slate-900 font-display mb-1">
+              S/ {precio.toFixed(2)}
+            </p>
+            <p className="text-xs text-slate-400 mb-6">
+              Inscripción #{enrollment?.id} · pendiente de pago
+            </p>
+            <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 p-3 rounded-xl">
+              Entorno de pruebas (sandbox): usa una tarjeta de prueba de Mercado Pago; no se cobra
+              dinero real.
+            </p>
           </div>
         )}
 
-        {step === 4 && (
+        {step === "done" && (
           <div className="text-center py-4">
             <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-5">
               <CheckCircle size={40} className="text-green-600" />
             </div>
-            <h3 className="text-2xl font-bold font-display text-slate-900 mb-2">¡Inscripción confirmada!</h3>
-            <p className="text-slate-500 mb-2">Tu inscripción al evento fue registrada exitosamente.</p>
-            <p className="text-xs text-slate-400 font-mono mb-6">TXN-2026-084729 · {new Date().toLocaleDateString("es-PE")}</p>
+            <h3 className="text-2xl font-bold font-display text-slate-900 mb-2">
+              ¡Inscripción confirmada!
+            </h3>
+            <p className="text-slate-500 mb-6">
+              Recibirás una notificación con la confirmación.
+            </p>
             <div className="bg-slate-50 rounded-xl p-4 text-sm text-left mb-6 flex flex-col gap-2">
               {[
+                ["Inscripción", `#${enrollment?.id ?? "—"}`],
                 ["Evento", ev.nombre],
                 ["Fecha", fechaEvento],
-                ["Monto", `S/ ${precio.toFixed(2)}`],
-                ["Método", METHODS.find(m => m.id === method)?.label ?? ""],
+                ["Monto", isFree ? "Gratuito" : `S/ ${precio.toFixed(2)}`],
+                ...(payment?.transactionCode
+                  ? [["Operación Mercado Pago", payment.transactionCode]]
+                  : []),
               ].map(([k, v]) => (
                 <div key={k} className="flex justify-between">
                   <span className="text-slate-500">{k}</span>
@@ -249,33 +339,63 @@ export default function EnrollmentFlow({ onNavigate, eventId }: Props) {
               ))}
             </div>
             <div className="flex gap-3">
-              <Button onClick={() => onNavigate("my-enrollments")} variant="secondary" fullWidth>Mis inscripciones</Button>
-              <Button onClick={() => onNavigate("explore-events")} fullWidth>Más eventos</Button>
+              <Button onClick={() => onNavigate("my-enrollments")} variant="secondary" fullWidth>
+                Mis inscripciones
+              </Button>
+              <Button onClick={() => onNavigate("explore-events")} fullWidth>
+                Más eventos
+              </Button>
             </div>
+          </div>
+        )}
+
+        {actionError && (
+          <div className="mt-5 flex items-start gap-2 bg-red-50 border border-red-200 rounded-xl p-3 text-sm text-red-700">
+            <AlertCircle size={16} className="flex-shrink-0 mt-0.5" />
+            <span>{actionError}</span>
+          </div>
+        )}
+        {info && (
+          <div className="mt-5 flex items-start gap-2 bg-blue-50 border border-blue-200 rounded-xl p-3 text-sm text-blue-700">
+            <AlertCircle size={16} className="flex-shrink-0 mt-0.5" />
+            <span>{info}</span>
           </div>
         )}
       </div>
 
-      {/* Navigation */}
-      {step < 4 && (
+      {/* Navegación */}
+      {step === "data" && (
         <div className="flex gap-3">
-          {step > 0 && (
-            <Button onClick={back} variant="ghost" icon={<ArrowLeft size={16} />}>Atrás</Button>
-          )}
-          <Button onClick={next} loading={loading} fullWidth iconRight={step < 3 ? <ArrowRight size={16} /> : undefined}>
-            {step === 3 ? "Ya realicé el pago" : step === 4 ? "Finalizar" : "Continuar"}
+          <Button onClick={() => onNavigate("event-detail")} variant="ghost" icon={<ArrowLeft size={16} />}>
+            Atrás
+          </Button>
+          <Button onClick={() => goTo("confirm")} fullWidth iconRight={<ArrowRight size={16} />}>
+            Continuar
+          </Button>
+        </div>
+      )}
+
+      {step === "confirm" && (
+        <div className="flex gap-3">
+          <Button onClick={() => goTo("data")} variant="ghost" icon={<ArrowLeft size={16} />} disabled={busy}>
+            Atrás
+          </Button>
+          <Button onClick={confirmEnrollment} loading={busy} fullWidth>
+            {isFree ? "Confirmar inscripción" : "Confirmar y continuar al pago"}
+          </Button>
+        </div>
+      )}
+
+      {step === "payment" && (
+        <div className="flex flex-col sm:flex-row gap-3">
+          <Button onClick={verifyPayment} variant="secondary" disabled={busy} icon={<RefreshCw size={16} />}>
+            Ya pagué, verificar
+          </Button>
+          <Button onClick={goToCheckout} loading={busy} fullWidth iconRight={<ExternalLink size={16} />}>
+            Pagar con Mercado Pago
           </Button>
         </div>
       )}
     </div>
-  );
-}
-
-function Clock({ size, className }: { size: number; className?: string }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className={className}>
-      <circle cx="12" cy="12" r="10" />
-      <polyline points="12 6 12 12 16 14" />
-    </svg>
   );
 }

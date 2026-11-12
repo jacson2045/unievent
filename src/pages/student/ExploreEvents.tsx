@@ -28,6 +28,7 @@ function EventCard({
   onClick: () => void;
 }) {
   const soldOut = event.cuposDisponibles <= 0;
+  const finished = new Date(event.fecha).getTime() < Date.now();
 
   return (
     <div
@@ -48,7 +49,9 @@ function EventCard({
           <Calendar size={56} className="text-white/70" />
         )}
         <div className="absolute top-3 left-3 flex gap-1.5">
-          {soldOut ? (
+          {finished ? (
+            <Badge variant="pending" dot>Finalizado</Badge>
+          ) : soldOut ? (
             <Badge variant="rejected" dot>Agotado</Badge>
           ) : (
             <Badge variant="active" dot>Disponible</Badge>
@@ -214,11 +217,16 @@ export default function ExploreEvents({ onNavigate, onSelectEvent }: Props) {
 
         return matchesSearch && matchesCategory;
       })
-      .sort((a, b) =>
-        sort === "date"
+      .sort((a, b) => {
+        // Los eventos finalizados van al final de la lista.
+        const now = Date.now();
+        const aPast = new Date(a.fecha).getTime() < now ? 1 : 0;
+        const bPast = new Date(b.fecha).getTime() < now ? 1 : 0;
+        if (aPast !== bPast) return aPast - bPast;
+        return sort === "date"
           ? new Date(a.fecha).getTime() - new Date(b.fecha).getTime()
-          : a.nombre.localeCompare(b.nombre, "es"),
-      );
+          : a.nombre.localeCompare(b.nombre, "es");
+      });
   }, [events, search, category, sort]);
 
   const openEvent = (id: number) => {
