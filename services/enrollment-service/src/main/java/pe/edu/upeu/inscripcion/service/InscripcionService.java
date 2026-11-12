@@ -10,7 +10,9 @@ import pe.edu.upeu.inscripcion.dto.InscripcionRequest;
 import pe.edu.upeu.inscripcion.dto.InscripcionResponse;
 import pe.edu.upeu.inscripcion.entity.Inscripcion;
 import pe.edu.upeu.inscripcion.messaging.InscripcionEventPublisher;
+import pe.edu.upeu.inscripcion.entity.Pago;
 import pe.edu.upeu.inscripcion.repository.InscripcionRepository;
+import pe.edu.upeu.inscripcion.repository.PagoRepository;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -25,6 +27,7 @@ public class InscripcionService {
     private final InscripcionRepository inscripcionRepository;
     private final EventoConsultaService eventoConsultaService;
     private final InscripcionEventPublisher eventPublisher;
+    private final PagoRepository pagoRepository;
 
     /**
      * Crea la inscripción de forma idempotente:
@@ -134,7 +137,15 @@ public class InscripcionService {
     }
 
     private InscripcionResponse toResponse(Inscripcion inscripcion) {
+        Optional<Pago> pago = inscripcion.getId() == null
+                ? Optional.empty()
+                : pagoRepository.findTopByInscripcionIdOrderByIdDesc(inscripcion.getId());
+
         return InscripcionResponse.builder()
+                .pagoEstado(pago.map(Pago::getEstado).orElse(null))
+                .pagoMonto(pago.map(Pago::getMonto).orElse(null))
+                .pagoMetodo(pago.map(Pago::getMetodo).orElse(null))
+                .pagoTransaccion(pago.map(Pago::getTransactionCode).orElse(null))
                 .id(inscripcion.getId())
                 .estudianteCorreo(inscripcion.getEstudianteCorreo())
                 .eventoId(inscripcion.getEventoId())

@@ -180,6 +180,12 @@ export default function App() {
     setCurrentPage("event-detail")
   }
 
+  /** Retoma la inscripción de un evento (el backend reutiliza la inscripción pendiente). */
+  const handleContinuePayment = (id: number) => {
+    setSelectedEventId(id)
+    setCurrentPage("enrollment-flow")
+  }
+
   if (!authenticated) {
     if (showForgot) {
       return (
@@ -231,7 +237,7 @@ export default function App() {
 
   switch (currentPage) {
     case "student-dashboard":
-      content = <StudentDashboard onNavigate={handleNavigate} />
+      content = <StudentDashboard onNavigate={handleNavigate} onSelectEvent={handleSelectEvent} />
       break
     case "explore-events":
       content = <ExploreEvents onNavigate={handleNavigate} onSelectEvent={handleSelectEvent} />
@@ -246,7 +252,13 @@ export default function App() {
       content = <PaymentResult onNavigate={handleNavigate} />
       break
     case "my-enrollments":
-      content = <MyEnrollments onNavigate={handleNavigate} />
+      content = (
+        <MyEnrollments
+          onNavigate={handleNavigate}
+          onSelectEvent={handleSelectEvent}
+          onContinuePayment={handleContinuePayment}
+        />
+      )
       break
     case "my-payments":
       content = <ComingSoon title="Mis pagos" />

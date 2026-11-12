@@ -15,6 +15,7 @@ import Button from "../../components/ui/Button";
 import { getEventById } from "../../api/eventsApi";
 import {
   createEnrollment,
+  getMyEnrollments,
   getPaymentStatus,
   startPayment,
 } from "../../api/enrollmentApi";
@@ -71,9 +72,17 @@ export default function EnrollmentFlow({ onNavigate, eventId }: Props) {
     setEventLoading(true);
     setEventError("");
 
-    getEventById(eventId)
-      .then((evento) => {
-        if (activo) setEv(evento);
+    // Si el estudiante ya tiene una inscripción pendiente en este evento,
+    // se retoma directamente en el paso de pago.
+    Promise.all([getEventById(eventId), getMyEnrollments().catch(() => [])])
+      .then(([evento, mine]) => {
+        if (!activo) return;
+        setEv(evento);
+        const pending = mine.find((e) => e.eventoId === evento.id && e.estado === "PENDIENTE");
+        if (pending) {
+          setEnrollment(pending);
+          setStep("payment");
+        }
       })
       .catch((error: unknown) => {
         if (activo) setEventError(errorMessage(error, "No se pudo cargar el evento."));

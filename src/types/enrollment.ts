@@ -14,6 +14,10 @@ export interface Enrollment {
   estado: EnrollmentStatus;
   requierePago: boolean;
   fechaInscripcion: string;
+  pagoEstado: PaymentStatus | null;
+  pagoMonto: number | null;
+  pagoMetodo: string | null;
+  pagoTransaccion: string | null;
 }
 
 export interface PaymentPreference {

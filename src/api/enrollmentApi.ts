@@ -1,4 +1,6 @@
 import { api } from "./client";
+import { getEvents } from "./eventsApi";
+import type { BackendEvent } from "../types/event";
 import type {
   Enrollment,
   PaymentPreference,
@@ -17,6 +19,28 @@ export function createEnrollment(eventoId: number): Promise<Enrollment> {
 
 export function getMyEnrollments(): Promise<Enrollment[]> {
   return api.get<Enrollment[]>("/api/inscripciones", opts);
+}
+
+export interface EnrollmentWithEvent {
+  enrollment: Enrollment;
+  /** null si el evento fue eliminado después de la inscripción. */
+  event: BackendEvent | null;
+}
+
+/**
+ * Inscripciones del estudiante unidas con los datos de su evento.
+ * Se piden las dos listas en paralelo (una llamada a cada servicio) y se cruzan por eventoId.
+ */
+export async function getMyEnrollmentsWithEvents(): Promise<EnrollmentWithEvent[]> {
+  const [enrollments, events] = await Promise.all([getMyEnrollments(), getEvents()]);
+  const byId = new Map(events.map((e) => [e.id, e]));
+  return enrollments
+    .map((enrollment) => ({ enrollment, event: byId.get(enrollment.eventoId) ?? null }))
+    .sort(
+      (a, b) =>
+        new Date(b.enrollment.fechaInscripcion).getTime() -
+        new Date(a.enrollment.fechaInscripcion).getTime(),
+    );
 }
 
 export function getEnrollment(id: number): Promise<Enrollment> {
