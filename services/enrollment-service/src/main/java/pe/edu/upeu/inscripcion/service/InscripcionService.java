@@ -102,7 +102,7 @@ public class InscripcionService {
         if (gratuito) {
             log.info("Evento {} gratuito: inscripción {} confirmada sin pago",
                     evento.getId(), guardada.getId());
-            eventPublisher.publicarInscripcionConfirmada(guardada, null);
+            eventPublisher.publicarInscripcionConfirmada(guardada, null, evento.getNombre());
         }
 
         return toResponse(guardada);

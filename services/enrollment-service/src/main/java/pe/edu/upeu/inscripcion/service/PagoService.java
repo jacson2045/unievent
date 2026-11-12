@@ -199,6 +199,18 @@ public class PagoService {
                 .build();
     }
 
+    /** Nombre del evento para el mensaje; si event-service no responde, se publica sin nombre. */
+    private String nombreEvento(Long eventoId) {
+        try {
+            return eventoConsultaService.buscarEvento(eventoId)
+                    .map(EventoClienteResponse::getNombre)
+                    .orElse(null);
+        } catch (Exception e) {
+            log.warn("No se pudo obtener el nombre del evento {}: {}", eventoId, e.getMessage());
+            return null;
+        }
+    }
+
     /** Página del frontend a la que Mercado Pago devuelve al estudiante. */
     private String urlRetorno(Long inscripcionId) {
         return frontendUrl + "/?page=payment-result&inscripcionId=" + inscripcionId;
@@ -301,7 +313,8 @@ public class PagoService {
                 if (!"CONFIRMADA".equals(inscripcion.getEstado())) {
                     inscripcion.setEstado("CONFIRMADA");
                     inscripcionRepository.save(inscripcion);
-                    eventPublisher.publicarInscripcionConfirmada(inscripcion, pago);
+                    eventPublisher.publicarInscripcionConfirmada(
+                            inscripcion, pago, nombreEvento(inscripcion.getEventoId()));
                 }
             }
 

@@ -11,4 +11,11 @@ public interface NotificacionRepository extends JpaRepository<Notificacion, Long
     List<Notificacion> findByDestinatarioCorreoOrderByCreadaEnDesc(String destinatarioCorreo);
 
     Optional<Notificacion> findByIdAndDestinatarioCorreo(Long id, String destinatarioCorreo);
+
+    long countByDestinatarioCorreoAndLeidaFalse(String destinatarioCorreo);
+
+    @org.springframework.data.jpa.repository.Modifying
+    @org.springframework.data.jpa.repository.Query(
+            "UPDATE Notificacion n SET n.leida = true WHERE n.destinatarioCorreo = :correo AND n.leida = false")
+    int marcarTodasLeidas(String correo);
 }

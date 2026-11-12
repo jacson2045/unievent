@@ -11,7 +11,7 @@ interface NavbarProps {
   rightContent?: React.ReactNode;
 }
 
-export default function Navbar({ title, userName = "Ana Ramírez", userRole = "Estudiante", notificationCount = 2, onNotifications, onProfile, rightContent }: NavbarProps) {
+export default function Navbar({ title, userName = "", userRole = "", notificationCount = 0, onNotifications, onProfile, rightContent }: NavbarProps) {
   return (
     <header className="h-16 bg-white border-b border-slate-100 flex items-center px-6 gap-4 flex-shrink-0">
       <h1 className="text-lg font-semibold text-slate-900 font-display flex-1">{title}</h1>
@@ -28,6 +28,7 @@ export default function Navbar({ title, userName = "Ana Ramírez", userRole = "E
 
       <button
         onClick={onNotifications}
+        title={notificationCount > 0 ? `${notificationCount} notificaciones sin leer` : "Notificaciones"}
         className="relative w-9 h-9 rounded-xl flex items-center justify-center text-slate-500 hover:bg-slate-50 hover:text-slate-900 transition-colors"
       >
         <Bell size={18} />

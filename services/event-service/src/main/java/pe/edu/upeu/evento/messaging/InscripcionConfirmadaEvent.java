@@ -14,7 +14,9 @@ public record InscripcionConfirmadaEvent(
         Long pagoId,
         Long eventoId,
         String estudianteCorreo,
-        BigDecimal monto
+        BigDecimal monto,
+        /** Nombre del evento (opcional; null en mensajes antiguos). */
+        String eventoNombre
 ) {
     public static final String TOPIC = "unievent.inscripciones";
 }

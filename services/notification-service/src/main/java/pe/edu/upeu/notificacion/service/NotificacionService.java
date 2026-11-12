@@ -47,7 +47,7 @@ public class NotificacionService {
                 .tipo(evento.tipo())
                 .titulo("Inscripción confirmada")
                 .mensaje("Tu inscripción #" + evento.inscripcionId()
-                        + " al evento #" + evento.eventoId()
+                        + " a " + nombreEvento(evento)
                         + " fue confirmada. " + detallePago)
                 .inscripcionId(evento.inscripcionId())
                 .eventoId(evento.eventoId())
@@ -73,6 +73,23 @@ public class NotificacionService {
 
         notificacion.setLeida(true);
         return toResponse(notificacionRepository.save(notificacion));
+    }
+
+    /** Marca como leídas todas las notificaciones del usuario; devuelve cuántas cambiaron. */
+    @Transactional
+    public int marcarTodasLeidas(String correo) {
+        return notificacionRepository.marcarTodasLeidas(correo);
+    }
+
+    @Transactional(readOnly = true)
+    public long contarNoLeidas(String correo) {
+        return notificacionRepository.countByDestinatarioCorreoAndLeidaFalse(correo);
+    }
+
+    private String nombreEvento(InscripcionConfirmadaEvent evento) {
+        return evento.eventoNombre() != null && !evento.eventoNombre().isBlank()
+                ? "«" + evento.eventoNombre() + "»"
+                : "el evento #" + evento.eventoId();
     }
 
     private NotificacionResponse toResponse(Notificacion n) {

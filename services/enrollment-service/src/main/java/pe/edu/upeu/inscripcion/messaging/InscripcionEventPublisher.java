@@ -27,6 +27,10 @@ public class InscripcionEventPublisher {
     private final KafkaTemplate<String, String> kafkaTemplate;
 
     public void publicarInscripcionConfirmada(Inscripcion inscripcion, Pago pago) {
+        publicarInscripcionConfirmada(inscripcion, pago, null);
+    }
+
+    public void publicarInscripcionConfirmada(Inscripcion inscripcion, Pago pago, String eventoNombre) {
         try {
             // Id determinista: el mismo hecho de negocio produce siempre el mismo eventId,
             // asi el consumidor puede detectar duplicados.
@@ -43,7 +47,8 @@ public class InscripcionEventPublisher {
                     pago != null ? pago.getId() : null,
                     inscripcion.getEventoId(),
                     inscripcion.getEstudianteCorreo(),
-                    pago != null ? pago.getMonto() : BigDecimal.ZERO);
+                    pago != null ? pago.getMonto() : BigDecimal.ZERO,
+                    eventoNombre);
 
             String payload = JSON.writeValueAsString(evento);
 

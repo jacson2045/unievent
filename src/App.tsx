@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react"
+import React, { useCallback, useEffect, useState } from "react"
 import AppShell from "./components/layout/AppShell"
 import Card from "./components/ui/Card"
 import Badge from "./components/ui/Badge"
@@ -25,16 +25,11 @@ import UserManagement from "./pages/admin/UserManagement"
 import SystemMonitoring from "./pages/admin/SystemMonitoring"
 
 import { clearAuth, getToken, getUser, isAuthenticated } from "./utils/auth"
+import { getUnreadCount } from "./api/notificationsApi"
 import type { Role as AuthRole } from "./utils/auth"
 
 type Role = AuthRole
 type AuthView = "login" | "register"
-
-const FALLBACK_ROLE_NAMES: Record<Role, string> = {
-  student: "Ana Ramírez Torres",
-  organizer: "Carlos Mendoza Quispe",
-  admin: "Roberto Lima Paredes",
-}
 
 const roleLabels: Record<Role, string> = {
   student: "Estudiante",
@@ -103,6 +98,21 @@ export default function App() {
   const [selectedEventId, setSelectedEventId] = useState<number | null>(null)
   const [showForgot, setShowForgot] = useState<boolean>(false)
   const [accessDenied, setAccessDenied] = useState<string>("")
+  const [unreadNotifications, setUnreadNotifications] = useState<number>(0)
+
+  const refreshUnread = useCallback(() => {
+    getUnreadCount()
+      .then(setUnreadNotifications)
+      .catch(() => undefined) // el contador es secundario: si falla, no se interrumpe la app
+  }, [])
+
+  // Contador de notificaciones: al iniciar sesión, al cambiar de pantalla y cada 30 s.
+  useEffect(() => {
+    if (!authenticated) return
+    refreshUnread()
+    const timer = window.setInterval(refreshUnread, 30000)
+    return () => window.clearInterval(timer)
+  }, [authenticated, currentPage, refreshUnread])
 
   useEffect(() => {
     if (isAuthenticated()) {
@@ -144,7 +154,7 @@ export default function App() {
     setRole(r)
     setAuthenticated(true)
     const user = getUser()
-    setUserName(user?.nombreCompleto || FALLBACK_ROLE_NAMES[r])
+    setUserName(user?.nombreCompleto || "")
     setCurrentPage(
       r === "student"
         ? "student-dashboard"
@@ -297,7 +307,7 @@ export default function App() {
       break
 
     case "notifications":
-      content = <NotificationsPage />
+      content = <NotificationsPage onUnreadChange={setUnreadNotifications} />
       break
     case "profile":
       content = <ProfilePage />
@@ -338,7 +348,7 @@ export default function App() {
     )
   }
 
-  const displayName = userName || FALLBACK_ROLE_NAMES[role]
+  const displayName = userName || roleLabels[role]
 
   return (
     <AppShell
@@ -349,6 +359,7 @@ export default function App() {
       title={PAGE_TITLES[currentPage] ?? "UniEvent Pay"}
       userName={displayName}
       userRole={roleLabels[role]}
+      unreadNotifications={unreadNotifications}
     >
       {content}
     </AppShell>
