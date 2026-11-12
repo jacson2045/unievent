@@ -123,7 +123,7 @@ public class PagoService {
                     PreferenceRequest.builder()
                             .items(List.of(item))
                             .externalReference(
-                                    pago.getId().toString())
+                                    pago.getReferenciaExterna())
                             .backUrls(
                                     PreferenceBackUrlsRequest.builder()
                                             .success(urlRetorno(inscripcionId))
@@ -282,7 +282,7 @@ public class PagoService {
             Map<String, Object> filters = new HashMap<>();
             filters.put(
                     "external_reference",
-                    pago.getId().toString());
+                    pago.getReferenciaExterna());
 
             MPSearchRequest searchRequest =
                     MPSearchRequest.builder()

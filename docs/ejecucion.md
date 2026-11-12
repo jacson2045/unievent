@@ -65,6 +65,7 @@ docker compose ps
 ```bash
 docker compose logs -f enrollment-service          # logs de un servicio
 docker compose up -d --scale event-service=2       # segunda instancia (balanceo por Eureka)
+docker compose --profile tests run --rm e2e        # pruebas integrales (27 casos)
 docker compose down                                # detener (conserva los datos)
 docker compose down -v                             # detener y borrar los datos
 ```

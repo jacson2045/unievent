@@ -20,6 +20,7 @@ nav:
   - Infraestructura: infraestructura.md
   - Ejecucion: ejecucion.md
   - Observabilidad: observabilidad.md
+  - Pruebas: pruebas.md
 
 markdown_extensions:
   - tables

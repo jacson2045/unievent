@@ -253,6 +253,24 @@ services:
     depends_on:
       kafka: { condition: service_healthy }
 
+  # ------------------------------------------------- pruebas integrales
+  # No arranca con "up": se ejecuta bajo demanda contra el sistema levantado.
+  #   docker compose --profile tests run --rm e2e
+  e2e:
+    image: node:22-alpine
+    profiles: [tests]
+    networks: [unievent]
+    working_dir: /repo
+    volumes:
+      - ./tests:/repo/tests:ro
+    environment:
+      E2E_GATEWAY_URL: http://api-gateway:8000
+      E2E_EUREKA_URL: http://discovery-server:8761
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
+    command: ["node", "--test", "--test-concurrency=1", "--test-reporter=spec", "tests/e2e/**/*.test.mjs"]
+    depends_on:
+      api-gateway: { condition: service_healthy }
+
 networks:
   unievent:
 
