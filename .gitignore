@@ -62,3 +62,8 @@ infra/server-kafka-*.properties
 
 # Herramientas auxiliares locales
 /services/auth-service/GenerarHash.java
+
+# Salida de compilación del IDE (Eclipse/VS Code) y archivos locales de trabajo
+**/bin/
+registro.json
+PLAN-IMPLEMENTACION-CLAUDE.md

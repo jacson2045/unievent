@@ -11,6 +11,7 @@ RUN --mount=type=cache,target=/root/.local/share/pnpm/store pnpm install --froze
 COPY index.html vite.config.ts tsconfig.json ./
 COPY .figma/make/site.json ./.figma/make/site.json
 COPY src ./src
+COPY public ./public
 RUN pnpm build
 
 FROM nginx:1.27-alpine

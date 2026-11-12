@@ -68,14 +68,10 @@ services:
     depends_on:
       - prometheus
 
+# Volúmenes normales: se crean solos en cualquier máquina (antes eran volúmenes externos
+# que solo existían en el equipo donde se recuperaron los datos de Kafka).
 volumes:
   grafana_data:
   kafka_data:
-    external: true
-    name: unievent-kafka-data-recovered
   kafka_secrets:
-    external: true
-    name: f1a9dee6176b07945aab4114cc7aa724377a4d4434a1f02fc44e19636ea9727f
   kafka_shared_config:
-    external: true
-    name: 3cd93f33fa57e529b56bff8c06df1a92693f47c5e23c8bb382fd41bce2e7d52a
