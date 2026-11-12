@@ -45,9 +45,46 @@ function PasswordStrength({ password }: { password: string }) {
   );
 }
 
+/**
+ * Campo de texto del formulario. Debe estar definido FUERA de Register: si se declara dentro,
+ * React lo trata como un componente nuevo en cada tecla, recrea el <input> y se pierde el foco.
+ */
+function Field({
+  label,
+  value,
+  onChange,
+  error,
+  type = "text",
+  placeholder,
+  autoComplete,
+}: {
+  label: string;
+  value: string;
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  error?: string;
+  type?: string;
+  placeholder?: string;
+  autoComplete?: string;
+}) {
+  return (
+    <div className="flex flex-col gap-1.5">
+      <label className="text-sm font-medium text-slate-700">{label}</label>
+      <input
+        type={type}
+        value={value}
+        onChange={onChange}
+        placeholder={placeholder}
+        autoComplete={autoComplete}
+        className={`w-full h-10 pl-3 pr-3 rounded-xl border text-sm outline-none transition-all bg-white text-slate-900 placeholder:text-slate-400 ${error ? "border-red-400 focus:ring-2 focus:ring-red-100" : "border-slate-200 hover:border-slate-300 focus:border-primary-500 focus:ring-2 focus:ring-primary-100"}`}
+      />
+      {error && <p className="text-xs text-red-600 flex items-center gap-1"><AlertCircle size={12} />{error}</p>}
+    </div>
+  );
+}
+
 export default function Register({ onLogin, onBack }: RegisterProps) {
   const [form, setForm] = useState({
-    fullName: "", email: "", code: "", password: "", confirm: "", role: "student" as Role, terms: false,
+    fullName: "", email: "", password: "", confirm: "", role: "student" as Role, terms: false,
   });
   const [showPw, setShowPw] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
@@ -94,23 +131,6 @@ export default function Register({ onLogin, onBack }: RegisterProps) {
     }
   };
 
-  const Field = ({ label, name, type = "text", placeholder, icon, required = true }: { label: string; name: string; type?: string; placeholder?: string; icon?: React.ReactNode; required?: boolean }) => (
-    <div className="flex flex-col gap-1.5">
-      <label className="text-sm font-medium text-slate-700">{label}{!required && <span className="text-slate-400 font-normal"> (opcional)</span>}</label>
-      <div className="relative">
-        {icon && <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">{icon}</span>}
-        <input
-          type={type}
-          value={form[name as keyof typeof form] as string}
-          onChange={set(name)}
-          placeholder={placeholder}
-          className={`w-full h-10 ${icon ? "pl-9" : "pl-3"} pr-3 rounded-xl border text-sm outline-none transition-all bg-white text-slate-900 placeholder:text-slate-400 ${errors[name] ? "border-red-400 focus:ring-2 focus:ring-red-100" : "border-slate-200 hover:border-slate-300 focus:border-primary-500 focus:ring-2 focus:ring-primary-100"}`}
-        />
-      </div>
-      {errors[name] && <p className="text-xs text-red-600 flex items-center gap-1"><AlertCircle size={12} />{errors[name]}</p>}
-    </div>
-  );
-
   return (
     <div className="min-h-screen flex bg-white">
       <div className="hidden lg:flex w-80 flex-shrink-0 bg-gradient-to-b from-primary-600 to-violet-700 flex-col justify-between p-10">
@@ -143,9 +163,23 @@ export default function Register({ onLogin, onBack }: RegisterProps) {
           )}
 
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-            <Field label="Nombre completo" name="fullName" placeholder="Ana Lucía Ramírez Torres" />
-            <Field label="Correo institucional" name="email" type="email" placeholder="ana.ramirez@uni.edu.pe" />
-            <Field label="Código universitario" name="code" placeholder="20211234" required={false} />
+            <Field
+              label="Nombre completo"
+              value={form.fullName}
+              onChange={set("fullName")}
+              error={errors.fullName}
+              placeholder="Nombres y apellidos"
+              autoComplete="name"
+            />
+            <Field
+              label="Correo institucional"
+              type="email"
+              value={form.email}
+              onChange={set("email")}
+              error={errors.email}
+              placeholder="nombre@upeu.edu.pe"
+              autoComplete="email"
+            />
 
             <div className="flex flex-col gap-1.5">
               <label className="text-sm font-medium text-slate-700">Contraseña</label>
