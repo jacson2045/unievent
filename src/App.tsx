@@ -350,7 +350,7 @@ export default function App() {
       content = <NotificationsPage onUnreadChange={setUnreadNotifications} />
       break
     case "profile":
-      content = <ProfilePage />
+      content = <ProfilePage onNameChange={setUserName} />
       break
 
     default:
