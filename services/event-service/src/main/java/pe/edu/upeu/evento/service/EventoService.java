@@ -45,13 +45,7 @@ public class EventoService {
                 .orElseThrow(() -> new NoSuchElementException("Evento no encontrado con id: " + id));
         Categoria categoria = buscarCategoriaOLanzarError(request.getCategoriaId());
 
-        evento.setNombre(request.getNombre());
-        evento.setDescripcion(request.getDescripcion());
-        evento.setFecha(request.getFecha());
-        evento.setLugar(request.getLugar());
-        evento.setCapacidad(request.getCapacidad());
-        evento.setPrecio(request.getPrecio());
-        evento.setCategoria(categoria);
+        eventoMapper.aplicar(request, evento, categoria);
 
         return eventoMapper.toResponse(eventoRepository.save(evento));
     }

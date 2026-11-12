@@ -1,9 +1,9 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Calendar, MapPin, Search, Building2, RefreshCw } from "lucide-react";
+import { Calendar, MapPin, Search, Building2, RefreshCw, Users } from "lucide-react";
 import Badge from "../../components/ui/Badge";
 import Button from "../../components/ui/Button";
 import { getEvents } from "../../api/eventsApi";
-import type { BackendEvent } from "../../types/event";
+import { MODALITY_LABELS, type BackendEvent } from "../../types/event";
 
 interface Props {
   onNavigate: (page: string) => void;
@@ -27,15 +27,37 @@ function EventCard({
   event: BackendEvent;
   onClick: () => void;
 }) {
+  const soldOut = event.cuposDisponibles <= 0;
+
   return (
     <div
       className="bg-white rounded-2xl border border-slate-100 shadow-[0_1px_3px_0_rgb(0_0_0/0.08)] overflow-hidden group hover:shadow-[0_4px_12px_-2px_rgb(0_0_0/0.1)] hover:-translate-y-0.5 transition-all duration-200 cursor-pointer"
       onClick={onClick}
     >
       <div className="relative h-44 bg-gradient-to-br from-primary-700 to-violet-800 overflow-hidden flex items-center justify-center">
-        <Calendar size={56} className="text-white/70" />
-        <div className="absolute top-3 left-3">
-          <Badge variant="active" dot>{event.estado}</Badge>
+        {event.imagenUrl ? (
+          <img
+            src={event.imagenUrl}
+            alt=""
+            className="absolute inset-0 w-full h-full object-cover"
+            onError={(e) => {
+              e.currentTarget.style.display = "none";
+            }}
+          />
+        ) : (
+          <Calendar size={56} className="text-white/70" />
+        )}
+        <div className="absolute top-3 left-3 flex gap-1.5">
+          {soldOut ? (
+            <Badge variant="rejected" dot>Agotado</Badge>
+          ) : (
+            <Badge variant="active" dot>Disponible</Badge>
+          )}
+          {event.modalidad && (
+            <span className="bg-white/90 text-slate-700 text-xs font-semibold px-2 py-0.5 rounded-full">
+              {MODALITY_LABELS[event.modalidad]}
+            </span>
+          )}
         </div>
         <div className="absolute top-3 right-3">
           {Number(event.precio) > 0 ? (
@@ -59,7 +81,7 @@ function EventCard({
           {event.nombre}
         </h3>
         <p className="text-xs text-slate-500 line-clamp-2 mb-3">
-          {event.descripcion || "No hay descripción disponible."}
+          {event.descripcionCorta || event.descripcion || "No hay descripción disponible."}
         </p>
 
         <div className="flex flex-col gap-2 mb-4">
@@ -71,9 +93,19 @@ function EventCard({
             <MapPin size={14} className="text-slate-400 flex-shrink-0 mt-0.5" />
             <span className="truncate">{event.lugar || "Lugar por confirmar"}</span>
           </div>
+          {event.organizador && (
+            <div className="flex items-start gap-1.5 text-xs text-slate-500">
+              <Building2 size={14} className="text-slate-400 flex-shrink-0 mt-0.5" />
+              <span className="truncate">{event.organizador}</span>
+            </div>
+          )}
           <div className="flex items-start gap-1.5 text-xs text-slate-500">
-            <Building2 size={14} className="text-slate-400 flex-shrink-0 mt-0.5" />
-            <span>Capacidad: {event.capacidad} personas</span>
+            <Users size={14} className="text-slate-400 flex-shrink-0 mt-0.5" />
+            <span>
+              {soldOut
+                ? "Sin cupos disponibles"
+                : `${event.cuposDisponibles} de ${event.capacidad} cupos disponibles`}
+            </span>
           </div>
         </div>
 
@@ -149,7 +181,11 @@ export default function ExploreEvents({ onNavigate, onSelectEvent }: Props) {
     () => [
       "all",
       ...Array.from(
-        new Set(events.map((event) => event.categoria?.nombre).filter(Boolean)),
+        new Set(
+          events
+            .map((event) => event.categoria?.nombre)
+            .filter((name): name is string => Boolean(name)),
+        ),
       ),
     ],
     [events],
@@ -165,6 +201,8 @@ export default function ExploreEvents({ onNavigate, onSelectEvent }: Props) {
           event.descripcion,
           event.categoria?.nombre,
           event.lugar,
+          event.organizador,
+          ...(event.tags ?? []),
         ]
           .filter(Boolean)
           .join(" ")

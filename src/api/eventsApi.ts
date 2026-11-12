@@ -14,12 +14,7 @@ export async function getEvents(): Promise<BackendEvent[]> {
 }
 
 export async function getEventById(id: number): Promise<BackendEvent> {
-  const events = await getEvents();
-  const event = events.find((item) => item.id === id);
-
-  if (!event) {
-    throw new Error("No se encontró el evento seleccionado.");
-  }
-
-  return event;
+  return api.get<BackendEvent>(`/api/eventos/${id}`, {
+    service: "gateway",
+  });
 }

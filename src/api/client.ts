@@ -65,7 +65,7 @@ export async function apiRequest<T>(
     if (token) {
       requestHeaders["Authorization"] = `Bearer ${token}`;
     } else {
-      throw new HttpError("No hay sesiÃ³n iniciada", 401);
+      throw new HttpError("No hay sesión iniciada", 401);
     }
   }
 
@@ -112,7 +112,7 @@ export async function apiRequest<T>(
     if (err instanceof HttpError) throw err;
     if (err instanceof TypeError) {
       throw new HttpError(
-        "No se pudo conectar con el servidor. Verifica que los microservicios estÃ©n ejecutÃ¡ndose.",
+        "No se pudo conectar con el servidor. Verifica que los microservicios estén ejecutándose.",
         0,
       );
     }
