@@ -1,0 +1,32 @@
+# Prometheus en docker-compose: descubre los microservicios a través de Eureka,
+# así mide automáticamente cualquier instancia nueva (por ejemplo, réplicas escaladas).
+global:
+  scrape_interval: 5s
+
+scrape_configs:
+  - job_name: unievent-eureka
+    metrics_path: /actuator/prometheus
+    eureka_sd_configs:
+      - server: http://discovery-server:8761/eureka
+        refresh_interval: 15s
+    relabel_configs:
+      # Etiqueta "application" con el nombre del servicio en minúsculas (auth-service, ...).
+      - source_labels: [__meta_eureka_app_name]
+        regex: (.+)
+        target_label: application
+        replacement: $1
+        action: replace
+      - source_labels: [application]
+        regex: (.+)
+        target_label: application
+        action: lowercase
+      - source_labels: [__meta_eureka_app_instance_id]
+        target_label: instance
+
+  # Eureka no se registra a sí mismo: se mide directamente.
+  - job_name: discovery-server
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets: ["discovery-server:8761"]
+        labels:
+          application: discovery-server

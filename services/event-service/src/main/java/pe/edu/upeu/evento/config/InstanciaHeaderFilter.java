@@ -12,7 +12,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.IOException;
 
 /**
- * Agrega la cabecera X-Instancia (servicio:puerto) a cada respuesta.
+ * Agrega la cabecera X-Instancia (servicio[:host]:puerto) a cada respuesta.
  * Sirve como evidencia del balanceo: al repetir una petición por el gateway
  * se ve qué instancia de event-service la atendió.
  */
@@ -22,8 +22,10 @@ public class InstanciaHeaderFilter extends OncePerRequestFilter {
     private final String instancia;
 
     public InstanciaHeaderFilter(@Value("${spring.application.name}") String nombre,
-                                 @Value("${server.port}") String puerto) {
-        this.instancia = nombre + ":" + puerto;
+                                 @Value("${server.port}") String puerto,
+                                 @Value("${HOSTNAME:}") String host) {
+        // En Docker las réplicas comparten puerto: el hostname (id del contenedor) las distingue.
+        this.instancia = host.isBlank() ? nombre + ":" + puerto : nombre + ":" + host + ":" + puerto;
     }
 
     @Override

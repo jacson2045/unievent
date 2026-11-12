@@ -14,6 +14,11 @@ spring:
     gateway:
       server:
         webflux:
+          httpclient:
+            # Sin estos límites, una instancia que desapareció (contenedor eliminado)
+            # deja la petición esperando; con ellos falla rápido y el Retry usa otra.
+            connect-timeout: 2000
+            response-timeout: 15s
           default-filters:
             - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials, RETAIN_FIRST
             # Resiliencia: si una instancia no responde (caída aún no retirada de Eureka),

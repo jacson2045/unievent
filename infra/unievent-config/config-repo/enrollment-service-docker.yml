@@ -1,0 +1,8 @@
+# Ambiente "docker" de enrollment-service: base de datos propia del servicio (patrón database-per-service).
+spring:
+  datasource:
+    url: jdbc:postgresql://postgres-enrollment:5432/enrollment_db
+    username: ${POSTGRES_USER:unievent}
+    password: ${POSTGRES_PASSWORD}
+  jpa:
+    show-sql: false
