@@ -1,69 +1,48 @@
+# ---------------------------------------------------------------- secretos
+# Variables reales (claves, tokens). Solo se versiona la plantilla.
+.env*
+!.env.example
+
+# ------------------------------------------------------- dependencias y build
 node_modules/
 dist/
 build/
 .cache/
-.env*
-!.env.example
 .vite/
 vite.config.*.timestamp-*
 *.tsbuildinfo
-*-debug.log*
+**/target/
+**/bin/
+*.class
+
+# Documentación generada (mkdocs build)
+site/
+
+# Reportes generados por las pruebas
+tests/e2e/reportes/*
+!tests/e2e/reportes/.gitignore
+
+# ----------------------------------------------------------------- logs
 logs/
 *.log
+
+# ------------------------------------------- editores y herramientas locales
+.vscode/
+.idea/
+.claude/
+.github/modernize/
+HELP.md
+/.plugins/
+/.opencode-skills/
 .claude-replay.*
 .tmp-*
 
-# Platform-managed agentplat state, not project source. In the
-# client-initiated single-repo workspace layout (make's `Path: "."` spec) the
-# repo root IS the workspace root, so these land inside this repo rather than
-# beside it.
-/.plugins/
-/.opencode-skills/
-
-# archivos locales
-inscripcion.json
-login.json
+# ------------------------------------------------- respaldos y temporales
 *.zip
-docker-compose.backup.yml
-.vscode/
-**/target/
-**/*.log
-
-# Respaldos y datos locales
-infra/backups/
-site/
-respaldo-frontend-*/
-
-# Archivos temporales y copias de seguridad
 *.bak
+*.bak-*
 *.backup
 *.backup-*
 *.before-*
 *.before_*
-
-# Archivos compilados y temporales
-*.class
-classpath-temp.txt
-
-# Datos y logs de Kafka
 **/kafka-logs/
-
-# Archivos locales desconocidos o temporales
-/et
-
-# Respaldos con sufijos adicionales
-*.bak-*
-*.backup-*
-
-# Archivos originales extraidos de Kafka
-infra/kafka-*-original.sh
-infra/server-kafka-*.properties
-
-
-# Herramientas auxiliares locales
-/services/auth-service/GenerarHash.java
-
-# Salida de compilación del IDE (Eclipse/VS Code) y archivos locales de trabajo
-**/bin/
-registro.json
-PLAN-IMPLEMENTACION-CLAUDE.md
