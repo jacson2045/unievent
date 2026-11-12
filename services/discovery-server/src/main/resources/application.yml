@@ -1,0 +1,33 @@
+server:
+  port: ${PORT:8761}
+
+spring:
+  application:
+    name: discovery-server
+
+eureka:
+  instance:
+    hostname: ${EUREKA_HOSTNAME:localhost}
+  client:
+    # Es el propio registro: no se registra ni consulta a otro Eureka.
+    register-with-eureka: false
+    fetch-registry: false
+    service-url:
+      defaultZone: http://${eureka.instance.hostname}:${server.port}/eureka/
+  server:
+    # En desarrollo las instancias se reinician seguido: se desactiva el modo de
+    # autopreservación para que las instancias caídas se eliminen rápido del registro.
+    enable-self-preservation: false
+    eviction-interval-timer-in-ms: 10000
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: always
+  metrics:
+    tags:
+      application: ${spring.application.name}

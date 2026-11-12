@@ -1,0 +1,20 @@
+# Configuración común a TODOS los microservicios (Spring Cloud Config la entrega
+# a cada aplicación además de su archivo propio <servicio>-<perfil>.yml).
+
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_URL:http://localhost:8761/eureka/}
+    # Consultar el registro con frecuencia para detectar rápido instancias nuevas o caídas.
+    registry-fetch-interval-seconds: 5
+  instance:
+    hostname: ${EUREKA_INSTANCE_HOSTNAME:localhost}
+    # Id único por instancia: permite levantar varias copias del mismo servicio.
+    instance-id: ${spring.application.name}:${server.port}
+    lease-renewal-interval-in-seconds: 5
+    lease-expiration-duration-in-seconds: 15
+
+management:
+  endpoint:
+    health:
+      show-details: always

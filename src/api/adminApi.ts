@@ -23,6 +23,7 @@ export const MONITORED_SERVICES = [
   { id: "event-service", label: "Event Service", port: 8080, desc: "Eventos, categorías y contador de inscritos" },
   { id: "enrollment-service", label: "Enrollment Service", port: 8083, desc: "Inscripciones, pagos (Mercado Pago) y asistencia" },
   { id: "notification-service", label: "Notification Service", port: 8084, desc: "Notificaciones a partir de eventos Kafka" },
+  { id: "discovery-server", label: "Discovery Server (Eureka)", port: 8761, desc: "Registro y descubrimiento de servicios" },
   { id: "config-server", label: "Config Server", port: 18888, desc: "Configuración centralizada" },
 ] as const;
 

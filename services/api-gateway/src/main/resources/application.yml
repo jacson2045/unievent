@@ -4,12 +4,31 @@ server:
 spring:
   application:
     name: api-gateway
+  config:
+    import: optional:configserver:${CONFIG_SERVER_URL:http://localhost:18888}
   cloud:
+    loadbalancer:
+      cache:
+        # Lista de instancias en caché: se refresca rápido para dejar de usar instancias caídas.
+        ttl: 5s
     gateway:
       server:
         webflux:
           default-filters:
             - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials, RETAIN_FIRST
+            # Resiliencia: si una instancia no responde (caída aún no retirada de Eureka),
+            # se reintenta la petición GET en otra instancia. Solo GET: es idempotente.
+            - name: Retry
+              args:
+                retries: 2
+                methods: GET
+                series: SERVER_ERROR
+                exceptions: java.io.IOException, java.util.concurrent.TimeoutException
+                backoff:
+                  firstBackoff: 50ms
+                  maxBackoff: 300ms
+                  factor: 2
+                  basedOnPreviousValue: false
           globalcors:
             cors-configurations:
               '[/**]':
@@ -20,50 +39,58 @@ spring:
                 allowedHeaders: "*"
                 allowCredentials: true
                 maxAge: 3600
+          # lb://<servicio>: el gateway busca las instancias en Eureka y reparte las
+          # peticiones entre ellas (Spring Cloud LoadBalancer, round-robin).
           routes:
             - id: auth-service
-              uri: http://localhost:8082
+              uri: lb://auth-service
               predicates:
                 - Path=/api/auth/**
             - id: event-service
-              uri: http://localhost:8080
+              uri: lb://event-service
               predicates:
                 - Path=/api/eventos/**, /api/categorias/**
             - id: enrollment-service
-              uri: http://localhost:8083
+              uri: lb://enrollment-service
               predicates:
                 - Path=/api/inscripciones/**
             - id: notification-service
-              uri: http://localhost:8084
+              uri: lb://notification-service
               predicates:
                 - Path=/api/notificaciones/**
             # Monitoreo: solo el health check de cada servicio (lo usa el panel del administrador).
             - id: monitor-auth
-              uri: http://localhost:8082
+              uri: lb://auth-service
               predicates:
                 - Path=/monitor/auth-service/health
               filters:
                 - SetPath=/actuator/health
             - id: monitor-event
-              uri: http://localhost:8080
+              uri: lb://event-service
               predicates:
                 - Path=/monitor/event-service/health
               filters:
                 - SetPath=/actuator/health
             - id: monitor-enrollment
-              uri: http://localhost:8083
+              uri: lb://enrollment-service
               predicates:
                 - Path=/monitor/enrollment-service/health
               filters:
                 - SetPath=/actuator/health
             - id: monitor-notification
-              uri: http://localhost:8084
+              uri: lb://notification-service
               predicates:
                 - Path=/monitor/notification-service/health
               filters:
                 - SetPath=/actuator/health
+            - id: monitor-discovery
+              uri: ${EUREKA_SERVER_URL:http://localhost:8761}
+              predicates:
+                - Path=/monitor/discovery-server/health
+              filters:
+                - SetPath=/actuator/health
             - id: monitor-config
-              uri: http://localhost:18888
+              uri: ${CONFIG_SERVER_URL:http://localhost:18888}
               predicates:
                 - Path=/monitor/config-server/health
               filters:
