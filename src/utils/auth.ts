@@ -72,3 +72,10 @@ export function clearAuth(): void {
 export function isAuthenticated(): boolean {
   return !!getToken();
 }
+
+/** Actualiza el nombre guardado tras editar el perfil (el token no cambia). */
+export function updateStoredName(nombreCompleto: string): void {
+  const user = getUser();
+  if (!user) return;
+  localStorage.setItem(USER_KEY, JSON.stringify({ ...user, nombreCompleto }));
+}

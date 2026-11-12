@@ -4,12 +4,6 @@ import Navbar from "./Navbar";
 
 type Role = "student" | "organizer" | "admin";
 
-const DEFAULT_ROLE_NAMES: Record<Role, string> = {
-  student: "Ana Ramírez Torres",
-  organizer: "Carlos Mendoza Quispe",
-  admin: "Roberto Lima Paredes",
-};
-
 const DEFAULT_ROLE_LABELS: Record<Role, string> = {
   student: "Estudiante",
   organizer: "Organizador",
@@ -26,6 +20,7 @@ interface AppShellProps {
   navRight?: React.ReactNode;
   userName?: string;
   userRole?: string;
+  unreadNotifications?: number;
 }
 
 export default function AppShell({
@@ -38,10 +33,11 @@ export default function AppShell({
   navRight,
   userName,
   userRole,
+  unreadNotifications = 0,
 }: AppShellProps) {
   const [collapsed, setCollapsed] = useState(false);
 
-  const displayName = userName ?? DEFAULT_ROLE_NAMES[role];
+  const displayName = userName ?? "";
   const displayRoleLabel = userRole ?? DEFAULT_ROLE_LABELS[role];
 
   return (
@@ -53,13 +49,14 @@ export default function AppShell({
         onLogout={onLogout}
         collapsed={collapsed}
         onToggle={() => setCollapsed(!collapsed)}
+        badges={{ notifications: unreadNotifications }}
       />
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         <Navbar
           title={title}
           userName={displayName}
           userRole={displayRoleLabel}
-          notificationCount={2}
+          notificationCount={unreadNotifications}
           onNotifications={() => onNavigate("notifications")}
           onProfile={() => onNavigate("profile")}
           rightContent={navRight}

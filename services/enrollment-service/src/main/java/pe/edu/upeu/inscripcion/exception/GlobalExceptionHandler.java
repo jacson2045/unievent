@@ -36,6 +36,11 @@ public class GlobalExceptionHandler {
             return build(HttpStatus.FORBIDDEN, message);
         }
 
+        // Fallback del circuit breaker: el servicio dependiente no responde.
+        if (message != null && message.contains("no está disponible")) {
+            return build(HttpStatus.SERVICE_UNAVAILABLE, message);
+        }
+
         return build(HttpStatus.CONFLICT, message);
     }
 
@@ -70,5 +75,11 @@ public class GlobalExceptionHandler {
         body.put("message", message);
 
         return ResponseEntity.status(status).body(body);
+    }
+
+    @ExceptionHandler(org.springframework.security.access.AccessDeniedException.class)
+    public ResponseEntity<Map<String, Object>> handleForbidden(
+            org.springframework.security.access.AccessDeniedException ex) {
+        return build(HttpStatus.FORBIDDEN, ex.getMessage());
     }
 }

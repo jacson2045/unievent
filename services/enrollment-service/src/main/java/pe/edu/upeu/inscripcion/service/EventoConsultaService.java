@@ -29,6 +29,20 @@ public class EventoConsultaService {
         }
     }
 
+    /** Ids de los eventos del organizador autenticado (consulta síncrona con circuit breaker). */
+    @CircuitBreaker(name = "eventoService", fallbackMethod = "misEventosFallback")
+    public java.util.Set<Long> idsEventosDelOrganizador(String authorization) {
+        return eventoClient.misEventos(authorization).stream()
+                .map(EventoClienteResponse::getId)
+                .collect(java.util.stream.Collectors.toSet());
+    }
+
+    private java.util.Set<Long> misEventosFallback(String authorization, Throwable t) {
+        log.error("event-service no disponible al consultar los eventos del organizador: {}", t.getMessage());
+        throw new IllegalStateException(
+            "No se pueden consultar los participantes porque el servicio de eventos no está disponible", t);
+    }
+
     private Optional<EventoClienteResponse> eventoFallback(Long eventoId, Throwable t) {
         log.error(
             "event-service no disponible al consultar evento {}: {}",

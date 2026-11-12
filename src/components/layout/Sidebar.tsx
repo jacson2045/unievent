@@ -20,7 +20,7 @@ const studentNav: NavItem[] = [
   { key: "my-enrollments", label: "Mis inscripciones", icon: <BookOpen size={18} /> },
   { key: "my-payments", label: "Mis pagos", icon: <CreditCard size={18} /> },
   { key: "my-attendance", label: "Mis asistencias", icon: <QrCode size={18} /> },
-  { key: "notifications", label: "Notificaciones", icon: <Bell size={18} />, badge: 2 },
+  { key: "notifications", label: "Notificaciones", icon: <Bell size={18} /> },
   { key: "profile", label: "Perfil", icon: <User size={18} /> },
 ];
 
@@ -29,9 +29,10 @@ const organizerNav: NavItem[] = [
   { key: "my-events", label: "Mis eventos", icon: <Calendar size={18} /> },
   { key: "create-event", label: "Crear evento", icon: <Plus size={18} /> },
   { key: "participants", label: "Participantes", icon: <Users size={18} /> },
+  { key: "attendance-control", label: "Asistencia", icon: <QrCode size={18} /> },
   { key: "org-payments", label: "Pagos", icon: <CreditCard size={18} /> },
   { key: "org-stats", label: "Estadísticas", icon: <BarChart3 size={18} /> },
-  { key: "notifications", label: "Notificaciones", icon: <Bell size={18} />, badge: 1 },
+  { key: "notifications", label: "Notificaciones", icon: <Bell size={18} /> },
   { key: "profile", label: "Perfil", icon: <User size={18} /> },
 ];
 
@@ -62,10 +63,12 @@ interface SidebarProps {
   onLogout: () => void;
   collapsed?: boolean;
   onToggle?: () => void;
+  /** Contadores por clave de menú (por ejemplo, notificaciones sin leer). */
+  badges?: Record<string, number>;
 }
 
-export default function Sidebar({ role, currentPage, onNavigate, onLogout, collapsed = false, onToggle }: SidebarProps) {
-  const nav = navByRole[role];
+export default function Sidebar({ role, currentPage, onNavigate, onLogout, collapsed = false, onToggle, badges = {} }: SidebarProps) {
+  const nav = navByRole[role].map((item) => ({ ...item, badge: badges[item.key] || undefined }));
 
   return (
     <aside
@@ -113,8 +116,8 @@ export default function Sidebar({ role, currentPage, onNavigate, onLogout, colla
                 <span className={`flex-shrink-0 ${active ? "text-primary-600" : "text-slate-400"}`}>{item.icon}</span>
                 {!collapsed && <span className="flex-1">{item.label}</span>}
                 {!collapsed && item.badge && (
-                  <span className="w-5 h-5 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
-                    {item.badge}
+                  <span className="min-w-5 h-5 px-1 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+                    {item.badge > 99 ? "99+" : item.badge}
                   </span>
                 )}
                 {collapsed && item.badge && (

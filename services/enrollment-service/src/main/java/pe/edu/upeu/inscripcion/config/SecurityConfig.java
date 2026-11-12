@@ -49,6 +49,8 @@ public class SecurityConfig {
                     "/swagger-ui.html",
                     "/v3/api-docs/**"
                 ).permitAll()
+                .requestMatchers("/api/inscripciones/organizador/**", "/api/inscripciones/organizador")
+                    .hasAnyRole("ORGANIZADOR", "ADMIN")
                 .requestMatchers("/api/inscripciones/**").hasRole("ESTUDIANTE")
                 .anyRequest().authenticated()
             )

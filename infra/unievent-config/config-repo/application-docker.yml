@@ -1,0 +1,26 @@
+# Ambiente "docker": común a todos los servicios cuando corren en docker-compose.
+# Se activa con SPRING_PROFILES_ACTIVE=dev,docker (ver docker-compose.yml).
+# Solo cambia lo que depende de la red: los nombres de host son los de los contenedores.
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://discovery-server:8761/eureka/
+  instance:
+    # Cada contenedor se registra con su IP de la red de Docker; el hostname del
+    # contenedor distingue réplicas del mismo servicio (docker compose --scale).
+    prefer-ip-address: true
+    instance-id: ${spring.application.name}:${HOSTNAME:local}:${server.port}
+
+spring:
+  kafka:
+    bootstrap-servers: kafka:9092
+
+app:
+  frontend-url: ${FRONTEND_URL:http://localhost:8443}
+
+management:
+  tracing:
+    export:
+      zipkin:
+        endpoint: http://zipkin:9411/api/v2/spans

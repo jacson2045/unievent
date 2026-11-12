@@ -1,0 +1,8 @@
+# Ambiente "docker" de event-service: base de datos propia del servicio (patrón database-per-service).
+spring:
+  datasource:
+    url: jdbc:postgresql://postgres-event:5432/event_db
+    username: ${POSTGRES_USER:unievent}
+    password: ${POSTGRES_PASSWORD}
+  jpa:
+    show-sql: false

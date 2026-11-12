@@ -50,9 +50,6 @@ logging:
     io.github.resilience4j: DEBUG
     org.springframework.cloud.circuitbreaker: DEBUG
 
-services:
-  event-service:
-    base-url: http://localhost:8080
 
 resilience4j:
   circuitbreaker:
@@ -65,3 +62,7 @@ resilience4j:
         wait-duration-in-open-state: 10s
         permitted-number-of-calls-in-half-open-state: 3
         automatic-transition-from-open-to-half-open-enabled: true
+
+app:
+  # Pagina del frontend a la que Mercado Pago devuelve al estudiante
+  frontend-url: ${FRONTEND_URL:http://localhost:8443}

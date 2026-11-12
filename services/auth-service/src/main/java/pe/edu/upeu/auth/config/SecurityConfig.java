@@ -17,7 +17,10 @@ import java.util.List;
 
 @Configuration
 @EnableWebSecurity
+@lombok.RequiredArgsConstructor
 public class SecurityConfig {
+
+    private final pe.edu.upeu.auth.security.JwtAuthFilter jwtAuthFilter;
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -49,10 +52,18 @@ public class SecurityConfig {
                     "/swagger-ui/**",
                     "/swagger-ui.html",
                     "/v3/api-docs/**",
-                    "/api/auth/**"
+                    "/api/auth/login",
+                    "/api/auth/registro",
+                    "/error"
                 ).permitAll()
+                .requestMatchers("/api/auth/admin/**").hasRole("ADMIN")
+                // Perfil y cambio de contraseña requieren un JWT válido.
                 .anyRequest().authenticated()
-            );
+            )
+            .exceptionHandling(ex -> ex.authenticationEntryPoint(
+                    (req, res, e) -> res.sendError(jakarta.servlet.http.HttpServletResponse.SC_UNAUTHORIZED)))
+            .addFilterBefore(jwtAuthFilter,
+                    org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }

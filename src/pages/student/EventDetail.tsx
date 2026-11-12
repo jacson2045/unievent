@@ -6,18 +6,22 @@ import {
   Tag,
   ArrowLeft,
   Share2,
-  Heart,
   CheckCircle,
   RefreshCw,
+  Building2,
+  ClipboardList,
 } from "lucide-react";
 import Button from "../../components/ui/Button";
 import Badge from "../../components/ui/Badge";
 import { getEventById } from "../../api/eventsApi";
-import type { BackendEvent } from "../../types/event";
+import { MODALITY_LABELS, type BackendEvent } from "../../types/event";
 
 interface Props {
   onNavigate: (page: string) => void;
   eventId: number | null;
+  /** Solo los estudiantes pueden inscribirse; otros roles ven el detalle en modo lectura. */
+  canEnroll?: boolean;
+  backPage?: string;
 }
 
 function formatDate(value: string): string {
@@ -29,7 +33,7 @@ function formatDate(value: string): string {
   });
 }
 
-export default function EventDetail({ onNavigate, eventId }: Props) {
+export default function EventDetail({ onNavigate, eventId, canEnroll: roleCanEnroll = true, backPage = "explore-events" }: Props) {
   const [event, setEvent] = useState<BackendEvent | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -87,22 +91,31 @@ export default function EventDetail({ onNavigate, eventId }: Props) {
         <p className="text-sm text-slate-500 mb-5">
           {error || "El evento solicitado no existe."}
         </p>
-        <Button onClick={() => onNavigate("explore-events")} icon={<ArrowLeft size={16} />}>
+        <Button onClick={() => onNavigate(backPage)} icon={<ArrowLeft size={16} />}>
           Volver a eventos
         </Button>
       </div>
     );
   }
 
-  const available = Math.max(0, event.capacidad);
-  const isFree = event.precio <= 0;
-  const status = event.estado || "Sin estado";
+  const available = Math.max(0, event.cuposDisponibles);
+  const soldOut = available <= 0;
+  const occupancy = event.capacidad > 0
+    ? Math.min(100, Math.round((event.inscritos / event.capacidad) * 100))
+    : 0;
+  const isFree = Number(event.precio) <= 0;
+  const isActive = event.estado === "ACTIVO";
+  const isPast = new Date(event.fecha).getTime() < Date.now();
+  const canEnroll = isActive && !soldOut && !isPast;
+  const dateRange = event.fechaFin
+    ? `${formatDate(event.fecha)} — ${formatDate(event.fechaFin)}`
+    : formatDate(event.fecha);
 
   return (
     <div className="max-w-5xl flex flex-col gap-6">
       <div className="flex items-center gap-2">
         <button
-          onClick={() => onNavigate("explore-events")}
+          onClick={() => onNavigate(backPage)}
           className="flex items-center gap-2 text-sm text-slate-500 hover:text-slate-900 font-medium transition-colors"
         >
           <ArrowLeft size={16} />
@@ -113,17 +126,43 @@ export default function EventDetail({ onNavigate, eventId }: Props) {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 flex flex-col gap-5">
           <div className="relative min-h-64 md:min-h-80 bg-gradient-to-br from-primary-700 to-violet-800 rounded-2xl overflow-hidden flex items-end">
-            <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+            {event.imagenUrl && (
+              <img
+                src={event.imagenUrl}
+                alt=""
+                className="absolute inset-0 w-full h-full object-cover"
+                onError={(e) => {
+                  e.currentTarget.style.display = "none";
+                }}
+              />
+            )}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
             <div className="relative p-6 md:p-8">
               <div className="flex flex-wrap gap-2 mb-3">
-                <Badge variant="active">{status}</Badge>
+                {!isActive ? (
+                  <Badge variant="rejected">{event.estado}</Badge>
+                ) : isPast ? (
+                  <Badge variant="pending">Finalizado</Badge>
+                ) : soldOut ? (
+                  <Badge variant="rejected">Agotado</Badge>
+                ) : (
+                  <Badge variant="active">Inscripciones abiertas</Badge>
+                )}
                 <span className="bg-violet-100 text-violet-700 text-xs font-semibold px-2.5 py-1 rounded-full">
                   {event.categoria?.nombre || "Sin categoría"}
                 </span>
+                {event.modalidad && (
+                  <span className="bg-white/90 text-slate-700 text-xs font-semibold px-2.5 py-1 rounded-full">
+                    {MODALITY_LABELS[event.modalidad]}
+                  </span>
+                )}
               </div>
               <h1 className="text-white font-bold text-xl md:text-3xl font-display leading-tight">
                 {event.nombre}
               </h1>
+              {event.organizador && (
+                <p className="text-white/80 text-sm mt-2">Organiza: {event.organizador}</p>
+              )}
             </div>
           </div>
 
@@ -138,7 +177,7 @@ export default function EventDetail({ onNavigate, eventId }: Props) {
                 {
                   icon: <Calendar size={16} />,
                   label: "Fecha y hora",
-                  value: formatDate(event.fecha),
+                  value: dateRange,
                 },
                 {
                   icon: <MapPin size={16} />,
@@ -151,9 +190,9 @@ export default function EventDetail({ onNavigate, eventId }: Props) {
                   value: `${event.capacidad} personas`,
                 },
                 {
-                  icon: <Tag size={16} />,
-                  label: "Categoría",
-                  value: event.categoria?.nombre || "Sin categoría",
+                  icon: <Building2 size={16} />,
+                  label: "Organizador",
+                  value: event.organizador || "No especificado",
                 },
               ].map((item) => (
                 <div key={item.label} className="flex items-start gap-3 p-3 bg-slate-50 rounded-xl">
@@ -165,6 +204,28 @@ export default function EventDetail({ onNavigate, eventId }: Props) {
                 </div>
               ))}
             </div>
+
+            {event.requisitos && (
+              <div className="mt-5 p-4 bg-amber-50 border border-amber-100 rounded-xl">
+                <p className="flex items-center gap-2 text-xs font-semibold text-amber-800 mb-1">
+                  <ClipboardList size={14} /> Requisitos
+                </p>
+                <p className="text-sm text-amber-900">{event.requisitos}</p>
+              </div>
+            )}
+
+            {event.tags?.length > 0 && (
+              <div className="mt-5 flex flex-wrap gap-2">
+                {event.tags.map((tag) => (
+                  <span
+                    key={tag}
+                    className="inline-flex items-center gap-1 text-xs text-slate-600 bg-slate-100 px-2.5 py-1 rounded-full"
+                  >
+                    <Tag size={12} /> {tag}
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
 
           <div className="bg-white rounded-2xl border border-slate-100 p-6 shadow-[0_1px_3px_0_rgb(0_0_0/0.08)]">
@@ -190,7 +251,7 @@ export default function EventDetail({ onNavigate, eventId }: Props) {
               ) : (
                 <>
                   <p className="text-3xl font-bold text-primary-700 font-display">
-                    S/ {event.precio.toFixed(2)}
+                    S/ {Number(event.precio).toFixed(2)}
                   </p>
                   <p className="text-xs text-slate-400">Precio por persona</p>
                 </>
@@ -199,25 +260,39 @@ export default function EventDetail({ onNavigate, eventId }: Props) {
 
             <div className="mb-5">
               <div className="flex justify-between text-xs text-slate-500 mb-1.5">
-                <span className="font-medium">Capacidad total</span>
-                <span>{available} personas</span>
+                <span className="font-medium">Cupos disponibles</span>
+                <span>
+                  {available} de {event.capacidad}
+                </span>
               </div>
               <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
-                <div className="h-full w-full rounded-full bg-primary-500" />
+                <div
+                  className={`h-full rounded-full ${occupancy >= 90 ? "bg-red-500" : occupancy >= 70 ? "bg-amber-500" : "bg-primary-500"}`}
+                  style={{ width: `${occupancy}%` }}
+                />
               </div>
               <p className="text-xs text-slate-400 mt-2">
-                La disponibilidad de cupos debe verificarse al inscribirse.
+                {event.inscritos} inscrito{event.inscritos !== 1 ? "s" : ""} · {occupancy}% ocupado
               </p>
             </div>
 
+            {roleCanEnroll && (
             <Button
               onClick={() => onNavigate("enrollment-flow")}
               fullWidth
               size="lg"
               className="mb-3"
+              disabled={!canEnroll}
             >
-              {isFree ? "Continuar inscripción" : "Inscribirme y pagar"}
+              {!isActive || isPast
+                ? "Inscripciones cerradas"
+                : soldOut
+                  ? "Sin cupos disponibles"
+                  : isFree
+                    ? "Inscribirme gratis"
+                    : "Inscribirme y pagar"}
             </Button>
+            )}
 
             <div className="flex gap-2">
               <Button
@@ -229,7 +304,7 @@ export default function EventDetail({ onNavigate, eventId }: Props) {
                   if (navigator.share) {
                     void navigator.share({
                       title: event.nombre,
-                      text: event.descripcion,
+                      text: event.descripcionCorta ?? event.descripcion ?? undefined,
                     }).catch(() => undefined);
                   } else if (navigator.clipboard) {
                     void navigator.clipboard.writeText(
@@ -239,15 +314,6 @@ export default function EventDetail({ onNavigate, eventId }: Props) {
                 }}
               >
                 Compartir
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="flex-1"
-                icon={<Heart size={15} />}
-                onClick={() => onNavigate("profile")}
-              >
-                Guardar
               </Button>
             </div>
 

@@ -37,15 +37,33 @@ public class NotificacionService {
         eventoProcesadoRepository.saveAndFlush(
                 new EventoProcesado(evento.eventId(), evento.tipo(), LocalDateTime.now()));
 
-        String monto = evento.monto() == null ? "0.00" : evento.monto().toPlainString();
+        if (InscripcionConfirmadaEvent.TIPO_CANCELADA.equals(evento.tipo())) {
+            notificacionRepository.save(Notificacion.builder()
+                    .destinatarioCorreo(evento.estudianteCorreo())
+                    .tipo(evento.tipo())
+                    .titulo("Pago no completado: inscripción anulada")
+                    .mensaje("El pago de tu inscripción #" + evento.inscripcionId()
+                            + " a " + nombreEvento(evento)
+                            + " fue rechazado o cancelado, por lo que la inscripción se anuló."
+                            + " Puedes volver a inscribirte desde el evento.")
+                    .inscripcionId(evento.inscripcionId())
+                    .eventoId(evento.eventoId())
+                    .build());
+            return true;
+        }
+
+        boolean gratuito = evento.monto() == null || evento.monto().signum() <= 0;
+        String detallePago = gratuito
+                ? "Evento gratuito, no requiere pago."
+                : "Pago registrado por S/ " + evento.monto().toPlainString() + ".";
 
         notificacionRepository.save(Notificacion.builder()
                 .destinatarioCorreo(evento.estudianteCorreo())
                 .tipo(evento.tipo())
                 .titulo("Inscripción confirmada")
                 .mensaje("Tu inscripción #" + evento.inscripcionId()
-                        + " al evento #" + evento.eventoId()
-                        + " fue confirmada. Pago registrado por S/ " + monto + ".")
+                        + " a " + nombreEvento(evento)
+                        + " fue confirmada. " + detallePago)
                 .inscripcionId(evento.inscripcionId())
                 .eventoId(evento.eventoId())
                 .build());
@@ -70,6 +88,23 @@ public class NotificacionService {
 
         notificacion.setLeida(true);
         return toResponse(notificacionRepository.save(notificacion));
+    }
+
+    /** Marca como leídas todas las notificaciones del usuario; devuelve cuántas cambiaron. */
+    @Transactional
+    public int marcarTodasLeidas(String correo) {
+        return notificacionRepository.marcarTodasLeidas(correo);
+    }
+
+    @Transactional(readOnly = true)
+    public long contarNoLeidas(String correo) {
+        return notificacionRepository.countByDestinatarioCorreoAndLeidaFalse(correo);
+    }
+
+    private String nombreEvento(InscripcionConfirmadaEvent evento) {
+        return evento.eventoNombre() != null && !evento.eventoNombre().isBlank()
+                ? "«" + evento.eventoNombre() + "»"
+                : "el evento #" + evento.eventoId();
     }
 
     private NotificacionResponse toResponse(Notificacion n) {

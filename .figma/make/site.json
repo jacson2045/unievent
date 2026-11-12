@@ -1,5 +1,10 @@
 {
-  "description": "Platform for universities to manage events, registrations, payments, attendance, and notifications with tailored dashboards for students, organizers, and admins.",
+  "title": "UniEvent Pay",
+  "description": "Plataforma universitaria para gestionar eventos, inscripciones, pagos, asistencia con QR y notificaciones.",
+  "language": "es",
+  "icons": {
+    "icon": "/favicon.svg"
+  },
   "robots": {
     "index": false
   },

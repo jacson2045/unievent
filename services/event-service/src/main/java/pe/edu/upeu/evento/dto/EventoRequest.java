@@ -1,5 +1,6 @@
 package pe.edu.upeu.evento.dto;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.validation.constraints.*;
 import lombok.*;
 import java.math.BigDecimal;
@@ -37,4 +38,31 @@ public class EventoRequest {
 
     @NotNull(message = "La categoría es obligatoria")
     private Long categoriaId;
+
+    @Size(max = 200)
+    private String descripcionCorta;
+
+    private LocalDateTime fechaFin;
+
+    @Pattern(regexp = "PRESENCIAL|VIRTUAL|HIBRIDO", message = "La modalidad debe ser PRESENCIAL, VIRTUAL o HIBRIDO")
+    private String modalidad;
+
+    @Size(max = 150)
+    private String organizador;
+
+    @Size(max = 300)
+    private String requisitos;
+
+    /** Etiquetas separadas por coma, por ejemplo "java,spring". */
+    @Size(max = 255)
+    private String tags;
+
+    @Size(max = 500)
+    private String imagenUrl;
+
+    @JsonIgnore
+    @AssertTrue(message = "La fecha de fin debe ser posterior a la fecha de inicio")
+    public boolean isFechaFinValida() {
+        return fechaFin == null || fecha == null || fechaFin.isAfter(fecha);
+    }
 }

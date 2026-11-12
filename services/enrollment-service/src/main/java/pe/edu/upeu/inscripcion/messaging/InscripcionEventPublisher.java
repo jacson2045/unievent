@@ -8,13 +8,14 @@ import pe.edu.upeu.inscripcion.entity.Inscripcion;
 import pe.edu.upeu.inscripcion.entity.Pago;
 import tools.jackson.databind.json.JsonMapper;
 
+import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.UUID;
 
 /**
  * Publica eventos de negocio en Kafka. Nunca rompe el flujo de pago:
- * si Kafka no responde, el error se registra y la confirmacion sigue valida.
+ * si Kafka no responde, el error se registra y la operacion sigue valida.
  */
 @Slf4j
 @Component
@@ -26,22 +27,37 @@ public class InscripcionEventPublisher {
     private final KafkaTemplate<String, String> kafkaTemplate;
 
     public void publicarInscripcionConfirmada(Inscripcion inscripcion, Pago pago) {
+        publicarInscripcionConfirmada(inscripcion, pago, null);
+    }
+
+    public void publicarInscripcionConfirmada(Inscripcion inscripcion, Pago pago, String eventoNombre) {
+        publicar(InscripcionConfirmadaEvent.TIPO, inscripcion, pago, eventoNombre);
+    }
+
+    /** Compensacion: la inscripcion pendiente se anulo porque el pago fue rechazado o cancelado. */
+    public void publicarInscripcionCancelada(Inscripcion inscripcion, Pago pago, String eventoNombre) {
+        publicar(InscripcionConfirmadaEvent.TIPO_CANCELADA, inscripcion, pago, eventoNombre);
+    }
+
+    private void publicar(String tipo, Inscripcion inscripcion, Pago pago, String eventoNombre) {
         try {
             // Id determinista: el mismo hecho de negocio produce siempre el mismo eventId,
             // asi el consumidor puede detectar duplicados.
             String eventId = UUID.nameUUIDFromBytes(
-                    (InscripcionConfirmadaEvent.TIPO + ":" + inscripcion.getId())
+                    (tipo + ":" + inscripcion.getId())
                             .getBytes(StandardCharsets.UTF_8)).toString();
 
             InscripcionConfirmadaEvent evento = new InscripcionConfirmadaEvent(
                     eventId,
-                    InscripcionConfirmadaEvent.TIPO,
+                    tipo,
                     Instant.now().toString(),
                     inscripcion.getId(),
-                    pago.getId(),
+                    // Evento gratuito: no hay pago asociado.
+                    pago != null ? pago.getId() : null,
                     inscripcion.getEventoId(),
                     inscripcion.getEstudianteCorreo(),
-                    pago.getMonto());
+                    pago != null ? pago.getMonto() : BigDecimal.ZERO,
+                    eventoNombre);
 
             String payload = JSON.writeValueAsString(evento);
 
@@ -49,17 +65,17 @@ public class InscripcionEventPublisher {
                     .send(InscripcionConfirmadaEvent.TOPIC, String.valueOf(inscripcion.getId()), payload)
                     .whenComplete((resultado, error) -> {
                         if (error != null) {
-                            log.error("No se pudo publicar el evento {} de la inscripcion {}: {}",
-                                    eventId, inscripcion.getId(), error.getMessage());
+                            log.error("No se pudo publicar el evento {} ({}) de la inscripcion {}: {}",
+                                    eventId, tipo, inscripcion.getId(), error.getMessage());
                         } else {
-                            log.info("Evento {} publicado en {} (inscripcion {})",
-                                    eventId, InscripcionConfirmadaEvent.TOPIC, inscripcion.getId());
+                            log.info("Evento {} ({}) publicado en {} (inscripcion {})",
+                                    eventId, tipo, InscripcionConfirmadaEvent.TOPIC, inscripcion.getId());
                         }
                     });
 
         } catch (Exception e) {
-            log.error("Fallo al publicar el evento de la inscripcion {}: {}",
-                    inscripcion.getId(), e.getMessage());
+            log.error("Fallo al publicar el evento {} de la inscripcion {}: {}",
+                    tipo, inscripcion.getId(), e.getMessage());
         }
     }
 }

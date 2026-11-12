@@ -1,0 +1,8 @@
+# Ambiente "docker" de notification-service: base de datos propia del servicio (patrón database-per-service).
+spring:
+  datasource:
+    url: jdbc:postgresql://postgres-notification:5432/notification_db
+    username: ${POSTGRES_USER:unievent}
+    password: ${POSTGRES_PASSWORD}
+  jpa:
+    show-sql: false

@@ -11,6 +11,9 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class PagoResponse {
     private Long id;
+    private Long inscripcionId;
+    private Long eventoId;
+    private String estadoInscripcion;
     private BigDecimal monto;
     private String metodo;
     private String estado;

@@ -58,3 +58,26 @@ export async function register(payload: RegisterPayload): Promise<AuthUser> {
   });
   return adaptResponse(res);
 }
+
+export interface Profile {
+  id: number;
+  nombreCompleto: string;
+  correo: string;
+  rol: string;
+  activo: boolean;
+  creadoEn: string;
+}
+
+const authOpts = { service: "auth" as const, requiresAuth: true };
+
+export function getProfile(): Promise<Profile> {
+  return api.get<Profile>("/api/auth/perfil", authOpts);
+}
+
+export function updateProfile(nombreCompleto: string): Promise<Profile> {
+  return api.put<Profile>("/api/auth/perfil", { ...authOpts, rawBody: { nombreCompleto } });
+}
+
+export function changePassword(actual: string, nueva: string): Promise<void> {
+  return api.put<void>("/api/auth/password", { ...authOpts, rawBody: { actual, nueva } });
+}

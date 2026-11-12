@@ -1,0 +1,13 @@
+# Contexto del frontend (docker/frontend/Dockerfile): solo lo necesario para compilar.
+node_modules
+dist
+site
+services
+infra
+docs
+respaldo-frontend-*
+*.zip
+*.log
+.git
+.claude
+.vscode

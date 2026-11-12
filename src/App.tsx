@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react"
+import React, { useCallback, useEffect, useState } from "react"
 import AppShell from "./components/layout/AppShell"
 import Card from "./components/ui/Card"
 import Badge from "./components/ui/Badge"
@@ -10,7 +10,9 @@ import StudentDashboard from "./pages/student/StudentDashboard"
 import ExploreEvents from "./pages/student/ExploreEvents"
 import EventDetail from "./pages/student/EventDetail"
 import EnrollmentFlow from "./pages/student/EnrollmentFlow"
+import PaymentResult from "./pages/student/PaymentResult"
 import MyEnrollments from "./pages/student/MyEnrollments"
+import MyPayments from "./pages/student/MyPayments"
 import AttendancePage from "./pages/student/AttendancePage"
 import NotificationsPage from "./pages/student/NotificationsPage"
 import ProfilePage from "./pages/student/ProfilePage"
@@ -18,22 +20,21 @@ import ProfilePage from "./pages/student/ProfilePage"
 import OrganizerDashboard from "./pages/organizer/OrganizerDashboard"
 import CreateEvent from "./pages/organizer/CreateEvent"
 import Participants from "./pages/organizer/Participants"
+import MyEvents from "./pages/organizer/MyEvents"
+import OrgPayments from "./pages/organizer/OrgPayments"
+import OrgStats from "./pages/organizer/OrgStats"
+import AttendanceControl from "./pages/organizer/AttendanceControl"
 
 import AdminDashboard from "./pages/admin/AdminDashboard"
 import UserManagement from "./pages/admin/UserManagement"
 import SystemMonitoring from "./pages/admin/SystemMonitoring"
 
 import { clearAuth, getToken, getUser, isAuthenticated } from "./utils/auth"
+import { getUnreadCount } from "./api/notificationsApi"
 import type { Role as AuthRole } from "./utils/auth"
 
 type Role = AuthRole
 type AuthView = "login" | "register"
-
-const FALLBACK_ROLE_NAMES: Record<Role, string> = {
-  student: "Ana Ramírez Torres",
-  organizer: "Carlos Mendoza Quispe",
-  admin: "Roberto Lima Paredes",
-}
 
 const roleLabels: Record<Role, string> = {
   student: "Estudiante",
@@ -44,12 +45,12 @@ const roleLabels: Record<Role, string> = {
 const ROLE_ALLOWED_PAGES: Record<Role, string[]> = {
   student: [
     "student-dashboard", "explore-events", "event-detail",
-    "enrollment-flow", "my-enrollments", "my-payments",
+    "enrollment-flow", "payment-result", "my-enrollments", "my-payments",
     "my-attendance", "notifications", "profile"
   ],
   organizer: [
-    "organizer-dashboard", "my-events", "create-event",
-    "participants", "org-payments", "org-stats",
+    "organizer-dashboard", "my-events", "create-event", "edit-event", "event-detail",
+    "participants", "attendance-control", "org-payments", "org-stats",
     "notifications", "profile"
   ],
   admin: [
@@ -76,6 +77,7 @@ const PAGE_TITLES: Record<string, string> = {
   "explore-events": "Explorar eventos",
   "event-detail": "Detalle del evento",
   "enrollment-flow": "Inscripción",
+  "payment-result": "Resultado del pago",
   "my-enrollments": "Mis inscripciones",
   "my-payments": "Mis pagos",
   "my-attendance": "Mis asistencias",
@@ -84,7 +86,9 @@ const PAGE_TITLES: Record<string, string> = {
   "organizer-dashboard": "Dashboard",
   "my-events": "Mis eventos",
   "create-event": "Crear evento",
+  "edit-event": "Editar evento",
   participants: "Participantes",
+  "attendance-control": "Control de asistencia",
   "org-payments": "Pagos",
   "org-stats": "Estadísticas",
   "admin-dashboard": "Dashboard",
@@ -101,6 +105,23 @@ export default function App() {
   const [selectedEventId, setSelectedEventId] = useState<number | null>(null)
   const [showForgot, setShowForgot] = useState<boolean>(false)
   const [accessDenied, setAccessDenied] = useState<string>("")
+  const [unreadNotifications, setUnreadNotifications] = useState<number>(0)
+  const [editingEventId, setEditingEventId] = useState<number | null>(null)
+  const [participantsEventId, setParticipantsEventId] = useState<number | null>(null)
+
+  const refreshUnread = useCallback(() => {
+    getUnreadCount()
+      .then(setUnreadNotifications)
+      .catch(() => undefined) // el contador es secundario: si falla, no se interrumpe la app
+  }, [])
+
+  // Contador de notificaciones: al iniciar sesión, al cambiar de pantalla y cada 30 s.
+  useEffect(() => {
+    if (!authenticated) return
+    refreshUnread()
+    const timer = window.setInterval(refreshUnread, 30000)
+    return () => window.clearInterval(timer)
+  }, [authenticated, currentPage, refreshUnread])
 
   useEffect(() => {
     if (isAuthenticated()) {
@@ -142,7 +163,7 @@ export default function App() {
     setRole(r)
     setAuthenticated(true)
     const user = getUser()
-    setUserName(user?.nombreCompleto || FALLBACK_ROLE_NAMES[r])
+    setUserName(user?.nombreCompleto || "")
     setCurrentPage(
       r === "student"
         ? "student-dashboard"
@@ -170,12 +191,29 @@ export default function App() {
     }
 
     setAccessDenied("")
+    if (page === "participants") setParticipantsEventId(null)
     setCurrentPage(page)
   }
 
   const handleSelectEvent = (id: number) => {
     setSelectedEventId(id)
     setCurrentPage("event-detail")
+  }
+
+  const handleEditEvent = (id: number) => {
+    setEditingEventId(id)
+    setCurrentPage("edit-event")
+  }
+
+  const handleViewParticipants = (id: number) => {
+    setParticipantsEventId(id)
+    setCurrentPage("participants")
+  }
+
+  /** Retoma la inscripción de un evento (el backend reutiliza la inscripción pendiente). */
+  const handleContinuePayment = (id: number) => {
+    setSelectedEventId(id)
+    setCurrentPage("enrollment-flow")
   }
 
   if (!authenticated) {
@@ -229,48 +267,77 @@ export default function App() {
 
   switch (currentPage) {
     case "student-dashboard":
-      content = <StudentDashboard onNavigate={handleNavigate} />
+      content = <StudentDashboard onNavigate={handleNavigate} onSelectEvent={handleSelectEvent} />
       break
     case "explore-events":
       content = <ExploreEvents onNavigate={handleNavigate} onSelectEvent={handleSelectEvent} />
       break
     case "event-detail":
-      content = <EventDetail onNavigate={handleNavigate} eventId={selectedEventId} />
+      content = (
+        <EventDetail
+          onNavigate={handleNavigate}
+          eventId={selectedEventId}
+          canEnroll={role === "student"}
+          backPage={role === "organizer" ? "my-events" : "explore-events"}
+        />
+      )
       break
     case "enrollment-flow":
       content = <EnrollmentFlow onNavigate={handleNavigate} eventId={selectedEventId} />
       break
+    case "payment-result":
+      content = <PaymentResult onNavigate={handleNavigate} />
+      break
     case "my-enrollments":
-      content = <MyEnrollments onNavigate={handleNavigate} />
+      content = (
+        <MyEnrollments
+          onNavigate={handleNavigate}
+          onSelectEvent={handleSelectEvent}
+          onContinuePayment={handleContinuePayment}
+        />
+      )
       break
     case "my-payments":
-      content = <ComingSoon title="Mis pagos" />
+      content = <MyPayments onNavigate={handleNavigate} />
       break
     case "my-attendance":
-      content = <AttendancePage />
+      content = <AttendancePage onNavigate={handleNavigate} />
       break
 
     case "organizer-dashboard":
-      content = <OrganizerDashboard onNavigate={handleNavigate} />
+      content = <OrganizerDashboard onNavigate={handleNavigate} onViewParticipants={handleViewParticipants} />
       break
     case "my-events":
-      content = <ComingSoon title="Mis eventos" />
+      content = (
+        <MyEvents
+          onNavigate={handleNavigate}
+          onEdit={handleEditEvent}
+          onViewParticipants={handleViewParticipants}
+          onViewEvent={handleSelectEvent}
+        />
+      )
       break
     case "create-event":
-      content = <CreateEvent onNavigate={handleNavigate} />
+      content = <CreateEvent key="new" onNavigate={handleNavigate} />
+      break
+    case "edit-event":
+      content = <CreateEvent key={`edit-${editingEventId}`} onNavigate={handleNavigate} eventId={editingEventId} />
       break
     case "participants":
-      content = <Participants />
+      content = <Participants key={participantsEventId ?? "all"} initialEventId={participantsEventId} />
+      break
+    case "attendance-control":
+      content = <AttendanceControl />
       break
     case "org-payments":
-      content = <ComingSoon title="Pagos" />
+      content = <OrgPayments />
       break
     case "org-stats":
-      content = <ComingSoon title="Estadísticas" />
+      content = <OrgStats />
       break
 
     case "admin-dashboard":
-      content = <AdminDashboard />
+      content = <AdminDashboard onNavigate={handleNavigate} />
       break
     case "user-management":
       content = <UserManagement />
@@ -280,10 +347,10 @@ export default function App() {
       break
 
     case "notifications":
-      content = <NotificationsPage />
+      content = <NotificationsPage onUnreadChange={setUnreadNotifications} />
       break
     case "profile":
-      content = <ProfilePage />
+      content = <ProfilePage onNameChange={setUserName} />
       break
 
     default:
@@ -321,7 +388,7 @@ export default function App() {
     )
   }
 
-  const displayName = userName || FALLBACK_ROLE_NAMES[role]
+  const displayName = userName || roleLabels[role]
 
   return (
     <AppShell
@@ -332,6 +399,7 @@ export default function App() {
       title={PAGE_TITLES[currentPage] ?? "UniEvent Pay"}
       userName={displayName}
       userRole={roleLabels[role]}
+      unreadNotifications={unreadNotifications}
     >
       {content}
     </AppShell>

@@ -5,13 +5,18 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import pe.edu.upeu.inscripcion.dto.EventoClienteResponse;
 
+// Sin URL fija: Feign resuelve "event-service" en Eureka y balancea entre sus instancias.
 @FeignClient(
     name = "event-service",
-    url = "${services.event-service.base-url}",
     configuration = pe.edu.upeu.feignconfig.EventoFeignConfig.class
 )
 public interface EventoClient {
 
     @GetMapping("/api/eventos/{id}")
     EventoClienteResponse buscarEventoRaw(@PathVariable("id") Long id);
+
+    /** Eventos del organizador: se reenvía su token para que event-service decida cuáles son suyos. */
+    @GetMapping("/api/eventos/mis-eventos")
+    java.util.List<EventoClienteResponse> misEventos(
+            @org.springframework.web.bind.annotation.RequestHeader("Authorization") String authorization);
 }

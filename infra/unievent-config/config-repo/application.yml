@@ -1,0 +1,49 @@
+# Configuración común a TODOS los microservicios (Spring Cloud Config la entrega
+# a cada aplicación además de su archivo propio <servicio>-<perfil>.yml).
+
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_URL:http://localhost:8761/eureka/}
+    # Consultar el registro con frecuencia para detectar rápido instancias nuevas o caídas.
+    registry-fetch-interval-seconds: 5
+  instance:
+    hostname: ${EUREKA_INSTANCE_HOSTNAME:localhost}
+    # Id único por instancia: permite levantar varias copias del mismo servicio.
+    instance-id: ${spring.application.name}:${server.port}
+    lease-renewal-interval-in-seconds: 5
+    lease-expiration-duration-in-seconds: 15
+
+management:
+  endpoint:
+    health:
+      show-details: always
+  metrics:
+    distribution:
+      # Histograma de latencias HTTP: permite calcular percentiles (p95) en Grafana.
+      percentiles-histogram:
+        http.server.requests: true
+  # Trazas distribuidas: cada petición recibe un traceId que viaja por HTTP (cabecera
+  # W3C traceparent), Feign y Kafka; aparece en los logs de todos los servicios y en Zipkin.
+  tracing:
+    sampling:
+      probability: 1.0
+    export:
+      zipkin:
+        endpoint: ${ZIPKIN_URL:http://localhost:9411/api/v2/spans}
+
+spring:
+  kafka:
+    # El traceId también viaja en las cabeceras de los mensajes Kafka.
+    template:
+      observation-enabled: true
+    listener:
+      observation-enabled: true
+  reactor:
+    # Gateway (WebFlux): propaga el contexto de trazas entre hilos reactivos.
+    context-propagation: auto
+
+logging:
+  pattern:
+    # [servicio,traceId,spanId] al inicio de cada línea de log.
+    correlation: "[${spring.application.name:},%X{traceId:-},%X{spanId:-}] "

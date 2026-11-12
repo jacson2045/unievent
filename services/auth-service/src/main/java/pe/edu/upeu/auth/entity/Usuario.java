@@ -31,4 +31,8 @@ public class Usuario {
     @Column(name = "activo", nullable = false)
     @Builder.Default
     private Boolean activo = true;
+
+    @Column(name = "creado_en", nullable = false, updatable = false)
+    @Builder.Default
+    private java.time.LocalDateTime creadoEn = java.time.LocalDateTime.now();
 }

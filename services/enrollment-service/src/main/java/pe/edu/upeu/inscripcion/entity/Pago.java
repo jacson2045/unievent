@@ -38,6 +38,11 @@ public class Pago {
     @Column(name = "created_at", nullable = false)
     @Builder.Default
     private LocalDateTime createdAt = LocalDateTime.now();
+    /** external_reference enviada a Mercado Pago: UUID único (no el id, que se repite si se reinicia la BD). */
+    @Column(name = "referencia_externa", nullable = false, unique = true, length = 64)
+    @Builder.Default
+    private String referenciaExterna = java.util.UUID.randomUUID().toString();
+
     @Column(name = "preference_id", length = 100)
 private String preferenceId;
 }
