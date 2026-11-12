@@ -25,5 +25,7 @@ public record InscripcionConfirmadaEvent(
     }
 
     public static final String TOPIC = "unievent.inscripciones";
+    /** Compensacion: inscripcion anulada por pago rechazado o cancelado. */
+    public static final String TIPO_CANCELADA = "INSCRIPCION_CANCELADA";
     public static final String TIPO = "INSCRIPCION_CONFIRMADA";
 }

@@ -3,7 +3,7 @@ package pe.edu.upeu.inscripcion.messaging;
 import java.math.BigDecimal;
 
 /**
- * Contrato del evento "inscripcion confirmada".
+ * Contrato de los eventos de inscripcion (tipo INSCRIPCION_CONFIRMADA o INSCRIPCION_CANCELADA).
  * El consumidor (notification-service) define el mismo record: mantener nombres de campos iguales.
  */
 public record InscripcionConfirmadaEvent(
@@ -19,5 +19,7 @@ public record InscripcionConfirmadaEvent(
         String eventoNombre
 ) {
     public static final String TOPIC = "unievent.inscripciones";
+    /** Compensacion: inscripcion anulada por pago rechazado o cancelado. */
+    public static final String TIPO_CANCELADA = "INSCRIPCION_CANCELADA";
     public static final String TIPO = "INSCRIPCION_CONFIRMADA";
 }

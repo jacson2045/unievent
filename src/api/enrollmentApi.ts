@@ -3,6 +3,7 @@ import { getEvents } from "./eventsApi";
 import type { BackendEvent } from "../types/event";
 import type {
   Enrollment,
+  Payment,
   PaymentPreference,
   PaymentStatusResponse,
 } from "../types/enrollment";
@@ -60,4 +61,9 @@ export function getPaymentStatus(
     `/api/inscripciones/${inscripcionId}/pago/estado`,
     opts,
   );
+}
+
+/** Historial de pagos del estudiante autenticado (el más reciente primero). */
+export function getMyPayments(): Promise<Payment[]> {
+  return api.get<Payment[]>("/api/inscripciones/pagos", opts);
 }

@@ -37,6 +37,21 @@ public class NotificacionService {
         eventoProcesadoRepository.saveAndFlush(
                 new EventoProcesado(evento.eventId(), evento.tipo(), LocalDateTime.now()));
 
+        if (InscripcionConfirmadaEvent.TIPO_CANCELADA.equals(evento.tipo())) {
+            notificacionRepository.save(Notificacion.builder()
+                    .destinatarioCorreo(evento.estudianteCorreo())
+                    .tipo(evento.tipo())
+                    .titulo("Pago no completado: inscripción anulada")
+                    .mensaje("El pago de tu inscripción #" + evento.inscripcionId()
+                            + " a " + nombreEvento(evento)
+                            + " fue rechazado o cancelado, por lo que la inscripción se anuló."
+                            + " Puedes volver a inscribirte desde el evento.")
+                    .inscripcionId(evento.inscripcionId())
+                    .eventoId(evento.eventoId())
+                    .build());
+            return true;
+        }
+
         boolean gratuito = evento.monto() == null || evento.monto().signum() <= 0;
         String detallePago = gratuito
                 ? "Evento gratuito, no requiere pago."

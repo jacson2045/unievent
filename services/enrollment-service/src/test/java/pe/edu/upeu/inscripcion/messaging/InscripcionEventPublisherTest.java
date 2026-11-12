@@ -85,4 +85,38 @@ class InscripcionEventPublisherTest {
                         "\"monto\":15.00"))
         );
     }
+
+    @Test
+    void debePublicarEventoDeCompensacionCuandoSeCancelaInscripcion() {
+        Inscripcion inscripcion = Inscripcion.builder()
+                .id(888888L)
+                .estudianteCorreo("prueba-unitaria@example.com")
+                .eventoId(2L)
+                .estado("CANCELADA")
+                .fechaInscripcion(LocalDateTime.now())
+                .build();
+
+        Pago pago = Pago.builder()
+                .id(777777L)
+                .inscripcion(inscripcion)
+                .monto(new BigDecimal("10.00"))
+                .estado("REJECTED")
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        when(kafkaTemplate.send(eq(InscripcionConfirmadaEvent.TOPIC), eq("888888"), any(String.class)))
+                .thenReturn(CompletableFuture.completedFuture(null));
+
+        publisher.publicarInscripcionCancelada(inscripcion, pago, "Taller de Spring Boot");
+
+        ArgumentCaptor<String> payloadCaptor = ArgumentCaptor.forClass(String.class);
+        verify(kafkaTemplate).send(eq(InscripcionConfirmadaEvent.TOPIC), eq("888888"), payloadCaptor.capture());
+
+        String payload = payloadCaptor.getValue();
+        assertAll(
+                () -> assertTrue(payload.contains("\"tipo\":\"INSCRIPCION_CANCELADA\"")),
+                () -> assertTrue(payload.contains("\"eventoNombre\":\"Taller de Spring Boot\"")),
+                () -> assertTrue(payload.contains("\"pagoId\":777777"))
+        );
+    }
 }

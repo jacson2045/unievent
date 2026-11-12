@@ -14,6 +14,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import pe.edu.upeu.inscripcion.dto.EstadoPagoResponse;
+import pe.edu.upeu.inscripcion.dto.PagoResponse;
 import pe.edu.upeu.inscripcion.dto.EventoClienteResponse;
 import pe.edu.upeu.inscripcion.dto.PreferenciaResponse;
 import pe.edu.upeu.inscripcion.entity.Inscripcion;
@@ -211,6 +212,23 @@ public class PagoService {
         }
     }
 
+    public List<PagoResponse> listarPorEstudiante(String estudianteCorreo) {
+        return pagoRepository.findHistorialPorEstudiante(estudianteCorreo)
+                .stream()
+                .map(p -> PagoResponse.builder()
+                        .id(p.getId())
+                        .inscripcionId(p.getInscripcion().getId())
+                        .eventoId(p.getInscripcion().getEventoId())
+                        .estadoInscripcion(p.getInscripcion().getEstado())
+                        .monto(p.getMonto())
+                        .metodo(p.getMetodo())
+                        .estado(p.getEstado())
+                        .transactionCode(p.getTransactionCode())
+                        .createdAt(p.getCreatedAt())
+                        .build())
+                .toList();
+    }
+
     /** Página del frontend a la que Mercado Pago devuelve al estudiante. */
     private String urlRetorno(Long inscripcionId) {
         return frontendUrl + "/?page=payment-result&inscripcionId=" + inscripcionId;
@@ -328,6 +346,8 @@ public class PagoService {
                     inscripcionRepository.save(inscripcion);
                     log.warn("Compensacion: pago {} {} -> inscripcion {} CANCELADA",
                             pago.getId(), nuevoEstado, inscripcion.getId());
+                    eventPublisher.publicarInscripcionCancelada(
+                            inscripcion, pago, nombreEvento(inscripcion.getEventoId()));
                 }
             }
 

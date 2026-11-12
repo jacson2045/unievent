@@ -12,6 +12,7 @@ import EventDetail from "./pages/student/EventDetail"
 import EnrollmentFlow from "./pages/student/EnrollmentFlow"
 import PaymentResult from "./pages/student/PaymentResult"
 import MyEnrollments from "./pages/student/MyEnrollments"
+import MyPayments from "./pages/student/MyPayments"
 import AttendancePage from "./pages/student/AttendancePage"
 import NotificationsPage from "./pages/student/NotificationsPage"
 import ProfilePage from "./pages/student/ProfilePage"
@@ -271,7 +272,7 @@ export default function App() {
       )
       break
     case "my-payments":
-      content = <ComingSoon title="Mis pagos" />
+      content = <MyPayments onNavigate={handleNavigate} />
       break
     case "my-attendance":
       content = <AttendancePage />

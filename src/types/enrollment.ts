@@ -36,3 +36,15 @@ export interface PaymentStatusResponse {
   metodo: string | null;
   transactionCode: string | null;
 }
+
+export interface Payment {
+  id: number;
+  inscripcionId: number;
+  eventoId: number;
+  estadoInscripcion: EnrollmentStatus;
+  monto: number;
+  metodo: string | null;
+  estado: PaymentStatus;
+  transactionCode: string | null;
+  createdAt: string;
+}

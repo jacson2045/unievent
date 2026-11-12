@@ -32,6 +32,12 @@ public class InscripcionEventosListener {
             return;
         }
 
+        // Solo una inscripcion confirmada ocupa un cupo; las canceladas nunca lo ocuparon.
+        if (!InscripcionConfirmadaEvent.TIPO.equals(evento.tipo())) {
+            log.debug("Evento {} de tipo {} ignorado por event-service", evento.eventId(), evento.tipo());
+            return;
+        }
+
         boolean aplicado = inscritosService.registrarInscripcionConfirmada(evento);
         if (aplicado) {
             log.info("Inscritos +1 en evento {} (evento Kafka {})", evento.eventoId(), evento.eventId());
