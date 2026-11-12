@@ -2,6 +2,7 @@ import { api } from "./client";
 import { getEvents } from "./eventsApi";
 import type { BackendEvent } from "../types/event";
 import type {
+  AttendanceResult,
   Enrollment,
   Payment,
   PaymentPreference,
@@ -72,4 +73,17 @@ export function getMyPayments(): Promise<Payment[]> {
 export function getOrganizerEnrollments(eventoId?: number): Promise<Enrollment[]> {
   const query = eventoId ? `?eventoId=${eventoId}` : "";
   return api.get<Enrollment[]>(`/api/inscripciones/organizador${query}`, opts);
+}
+
+/** Organizador: registra la asistencia con el código del QR (escaneado o escrito). */
+export function checkInByCode(codigo: string, eventoId?: number): Promise<AttendanceResult> {
+  return api.post<AttendanceResult>("/api/inscripciones/organizador/asistencia", {
+    ...opts,
+    rawBody: { codigo, eventoId },
+  });
+}
+
+/** Organizador: registro manual de asistencia desde la lista de participantes. */
+export function checkInByEnrollment(inscripcionId: number): Promise<AttendanceResult> {
+  return api.post<AttendanceResult>(`/api/inscripciones/organizador/${inscripcionId}/asistencia`, opts);
 }

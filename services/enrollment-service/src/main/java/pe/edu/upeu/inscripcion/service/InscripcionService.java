@@ -139,7 +139,7 @@ public class InscripcionService {
         return inscripcionRepository
                 .findByEventoIdInOrderByFechaInscripcionDesc(misEventos)
                 .stream()
-                .map(this::toResponse)
+                .map(this::toResponseSinCodigo)
                 .toList();
     }
 
@@ -161,7 +161,17 @@ public class InscripcionService {
         return toResponse(inscripcion);
     }
 
+    /** Respuesta para el propio estudiante: incluye su código de asistencia si está confirmada. */
     private InscripcionResponse toResponse(Inscripcion inscripcion) {
+        InscripcionResponse r = toResponseSinCodigo(inscripcion);
+        if ("CONFIRMADA".equals(inscripcion.getEstado())) {
+            r.setCodigoAsistencia(inscripcion.getCodigoAsistencia());
+        }
+        return r;
+    }
+
+    /** Respuesta para el organizador: nunca expone el código (evita registrar asistencias ajenas). */
+    private InscripcionResponse toResponseSinCodigo(Inscripcion inscripcion) {
         Optional<Pago> pago = inscripcion.getId() == null
                 ? Optional.empty()
                 : pagoRepository.findTopByInscripcionIdOrderByIdDesc(inscripcion.getId());
@@ -179,6 +189,7 @@ public class InscripcionService {
                 // inscripción PENDIENTE siempre corresponde a un evento con costo.
                 .requierePago("PENDIENTE".equals(inscripcion.getEstado()))
                 .fechaInscripcion(inscripcion.getFechaInscripcion())
+                .fechaAsistencia(inscripcion.getFechaAsistencia())
                 .build();
     }
 }

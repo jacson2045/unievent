@@ -29,6 +29,7 @@ const organizerNav: NavItem[] = [
   { key: "my-events", label: "Mis eventos", icon: <Calendar size={18} /> },
   { key: "create-event", label: "Crear evento", icon: <Plus size={18} /> },
   { key: "participants", label: "Participantes", icon: <Users size={18} /> },
+  { key: "attendance-control", label: "Asistencia", icon: <QrCode size={18} /> },
   { key: "org-payments", label: "Pagos", icon: <CreditCard size={18} /> },
   { key: "org-stats", label: "Estadísticas", icon: <BarChart3 size={18} /> },
   { key: "notifications", label: "Notificaciones", icon: <Bell size={18} /> },

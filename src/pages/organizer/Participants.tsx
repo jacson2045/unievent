@@ -33,7 +33,7 @@ export default function Participants({ initialEventId = null }: Props) {
   const exportCsv = () => {
     downloadCsv(
       `participantes${selectedEvent ? `-evento-${selectedEvent.id}` : ""}.csv`,
-      ["Inscripción", "Estudiante", "Evento", "Fecha de inscripción", "Estado", "Pago", "Monto"],
+      ["Inscripción", "Estudiante", "Evento", "Fecha de inscripción", "Estado", "Pago", "Monto", "Asistencia"],
       rows.map((r) => [
         r.id,
         r.estudianteCorreo,
@@ -42,6 +42,7 @@ export default function Participants({ initialEventId = null }: Props) {
         ENROLLMENT_STATUS[r.estado].label,
         r.pagoEstado ? PAYMENT_STATUS[r.pagoEstado].label : "Sin pago",
         r.pagoMonto ? Number(r.pagoMonto).toFixed(2) : "0.00",
+        r.fechaAsistencia ? formatDateTime(r.fechaAsistencia) : "",
       ]),
     );
   };
@@ -120,7 +121,7 @@ export default function Participants({ initialEventId = null }: Props) {
             <table className="w-full">
               <thead>
                 <tr className="border-b border-slate-100 bg-slate-50">
-                  {["Estudiante", "Evento", "Inscripción", "Estado", "Pago", "Monto"].map((h) => (
+                  {["Estudiante", "Evento", "Inscripción", "Estado", "Pago", "Monto", "Asistencia"].map((h) => (
                     <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-slate-500 whitespace-nowrap">
                       {h}
                     </th>
@@ -155,6 +156,13 @@ export default function Participants({ initialEventId = null }: Props) {
                       </td>
                       <td className="px-4 py-3 text-sm font-semibold text-slate-900 whitespace-nowrap">
                         {formatMoney(r.pagoMonto ?? 0)}
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        {r.fechaAsistencia ? (
+                          <Badge variant="attended">Asistió</Badge>
+                        ) : (
+                          <span className="text-xs text-slate-400">—</span>
+                        )}
                       </td>
                     </tr>
                   );

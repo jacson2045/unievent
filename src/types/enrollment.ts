@@ -18,6 +18,16 @@ export interface Enrollment {
   pagoMonto: number | null;
   pagoMetodo: string | null;
   pagoTransaccion: string | null;
+  /** Solo llega al propio estudiante y solo si la inscripción está confirmada. */
+  codigoAsistencia: string | null;
+  fechaAsistencia: string | null;
+}
+
+export interface AttendanceResult {
+  inscripcionId: number;
+  eventoId: number;
+  estudianteCorreo: string;
+  fechaAsistencia: string;
 }
 
 export interface PaymentPreference {

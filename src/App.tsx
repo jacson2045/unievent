@@ -23,6 +23,7 @@ import Participants from "./pages/organizer/Participants"
 import MyEvents from "./pages/organizer/MyEvents"
 import OrgPayments from "./pages/organizer/OrgPayments"
 import OrgStats from "./pages/organizer/OrgStats"
+import AttendanceControl from "./pages/organizer/AttendanceControl"
 
 import AdminDashboard from "./pages/admin/AdminDashboard"
 import UserManagement from "./pages/admin/UserManagement"
@@ -49,7 +50,7 @@ const ROLE_ALLOWED_PAGES: Record<Role, string[]> = {
   ],
   organizer: [
     "organizer-dashboard", "my-events", "create-event", "edit-event", "event-detail",
-    "participants", "org-payments", "org-stats",
+    "participants", "attendance-control", "org-payments", "org-stats",
     "notifications", "profile"
   ],
   admin: [
@@ -87,6 +88,7 @@ const PAGE_TITLES: Record<string, string> = {
   "create-event": "Crear evento",
   "edit-event": "Editar evento",
   participants: "Participantes",
+  "attendance-control": "Control de asistencia",
   "org-payments": "Pagos",
   "org-stats": "Estadísticas",
   "admin-dashboard": "Dashboard",
@@ -299,7 +301,7 @@ export default function App() {
       content = <MyPayments onNavigate={handleNavigate} />
       break
     case "my-attendance":
-      content = <AttendancePage />
+      content = <AttendancePage onNavigate={handleNavigate} />
       break
 
     case "organizer-dashboard":
@@ -323,6 +325,9 @@ export default function App() {
       break
     case "participants":
       content = <Participants key={participantsEventId ?? "all"} initialEventId={participantsEventId} />
+      break
+    case "attendance-control":
+      content = <AttendanceControl />
       break
     case "org-payments":
       content = <OrgPayments />

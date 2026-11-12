@@ -17,6 +17,9 @@ public class InscripcionResponse {
     private java.math.BigDecimal pagoMonto;
     private String pagoMetodo;
     private String pagoTransaccion;
+    /** Solo se envía al propio estudiante y solo si la inscripción está confirmada. */
+    private String codigoAsistencia;
+    private java.time.LocalDateTime fechaAsistencia;
     private String estudianteCorreo;
     private Long eventoId;
     private String estado;
