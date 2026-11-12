@@ -14,4 +14,9 @@ public interface EventoClient {
 
     @GetMapping("/api/eventos/{id}")
     EventoClienteResponse buscarEventoRaw(@PathVariable("id") Long id);
+
+    /** Eventos del organizador: se reenvía su token para que event-service decida cuáles son suyos. */
+    @GetMapping("/api/eventos/mis-eventos")
+    java.util.List<EventoClienteResponse> misEventos(
+            @org.springframework.web.bind.annotation.RequestHeader("Authorization") String authorization);
 }

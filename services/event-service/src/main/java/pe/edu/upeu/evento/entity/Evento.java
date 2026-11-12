@@ -57,6 +57,10 @@ public class Evento {
     @Column(name = "organizador", length = 150)
     private String organizador;
 
+    /** Correo del usuario que creó el evento (dueño). Se toma del JWT, nunca del cuerpo. */
+    @Column(name = "organizador_correo", length = 150)
+    private String organizadorCorreo;
+
     @Column(name = "requisitos", length = 300)
     private String requisitos;
 

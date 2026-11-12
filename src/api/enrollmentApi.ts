@@ -67,3 +67,9 @@ export function getPaymentStatus(
 export function getMyPayments(): Promise<Payment[]> {
   return api.get<Payment[]>("/api/inscripciones/pagos", opts);
 }
+
+/** Organizador: inscripciones (con su último pago) de sus eventos; opcionalmente de uno solo. */
+export function getOrganizerEnrollments(eventoId?: number): Promise<Enrollment[]> {
+  const query = eventoId ? `?eventoId=${eventoId}` : "";
+  return api.get<Enrollment[]>(`/api/inscripciones/organizador${query}`, opts);
+}

@@ -13,6 +13,12 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
     @Query("SELECT e FROM Evento e JOIN FETCH e.categoria")
     List<Evento> findAllConCategoria();
 
+    @Query("SELECT e FROM Evento e JOIN FETCH e.categoria WHERE e.organizadorCorreo = :correo ORDER BY e.fecha DESC")
+    List<Evento> findByOrganizadorCorreoConCategoria(String correo);
+
+    @Query("SELECT e FROM Evento e JOIN FETCH e.categoria ORDER BY e.fecha DESC")
+    List<Evento> findAllConCategoriaOrdenFecha();
+
     @Query("SELECT e FROM Evento e JOIN FETCH e.categoria WHERE e.id = :id")
     Optional<Evento> findByIdConCategoria(Long id);
 

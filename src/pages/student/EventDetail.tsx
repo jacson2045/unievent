@@ -19,6 +19,9 @@ import { MODALITY_LABELS, type BackendEvent } from "../../types/event";
 interface Props {
   onNavigate: (page: string) => void;
   eventId: number | null;
+  /** Solo los estudiantes pueden inscribirse; otros roles ven el detalle en modo lectura. */
+  canEnroll?: boolean;
+  backPage?: string;
 }
 
 function formatDate(value: string): string {
@@ -30,7 +33,7 @@ function formatDate(value: string): string {
   });
 }
 
-export default function EventDetail({ onNavigate, eventId }: Props) {
+export default function EventDetail({ onNavigate, eventId, canEnroll: roleCanEnroll = true, backPage = "explore-events" }: Props) {
   const [event, setEvent] = useState<BackendEvent | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -88,7 +91,7 @@ export default function EventDetail({ onNavigate, eventId }: Props) {
         <p className="text-sm text-slate-500 mb-5">
           {error || "El evento solicitado no existe."}
         </p>
-        <Button onClick={() => onNavigate("explore-events")} icon={<ArrowLeft size={16} />}>
+        <Button onClick={() => onNavigate(backPage)} icon={<ArrowLeft size={16} />}>
           Volver a eventos
         </Button>
       </div>
@@ -112,7 +115,7 @@ export default function EventDetail({ onNavigate, eventId }: Props) {
     <div className="max-w-5xl flex flex-col gap-6">
       <div className="flex items-center gap-2">
         <button
-          onClick={() => onNavigate("explore-events")}
+          onClick={() => onNavigate(backPage)}
           className="flex items-center gap-2 text-sm text-slate-500 hover:text-slate-900 font-medium transition-colors"
         >
           <ArrowLeft size={16} />
@@ -273,6 +276,7 @@ export default function EventDetail({ onNavigate, eventId }: Props) {
               </p>
             </div>
 
+            {roleCanEnroll && (
             <Button
               onClick={() => onNavigate("enrollment-flow")}
               fullWidth
@@ -288,6 +292,7 @@ export default function EventDetail({ onNavigate, eventId }: Props) {
                     ? "Inscribirme gratis"
                     : "Inscribirme y pagar"}
             </Button>
+            )}
 
             <div className="flex gap-2">
               <Button

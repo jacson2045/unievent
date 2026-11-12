@@ -20,6 +20,9 @@ import ProfilePage from "./pages/student/ProfilePage"
 import OrganizerDashboard from "./pages/organizer/OrganizerDashboard"
 import CreateEvent from "./pages/organizer/CreateEvent"
 import Participants from "./pages/organizer/Participants"
+import MyEvents from "./pages/organizer/MyEvents"
+import OrgPayments from "./pages/organizer/OrgPayments"
+import OrgStats from "./pages/organizer/OrgStats"
 
 import AdminDashboard from "./pages/admin/AdminDashboard"
 import UserManagement from "./pages/admin/UserManagement"
@@ -45,7 +48,7 @@ const ROLE_ALLOWED_PAGES: Record<Role, string[]> = {
     "my-attendance", "notifications", "profile"
   ],
   organizer: [
-    "organizer-dashboard", "my-events", "create-event",
+    "organizer-dashboard", "my-events", "create-event", "edit-event", "event-detail",
     "participants", "org-payments", "org-stats",
     "notifications", "profile"
   ],
@@ -82,6 +85,7 @@ const PAGE_TITLES: Record<string, string> = {
   "organizer-dashboard": "Dashboard",
   "my-events": "Mis eventos",
   "create-event": "Crear evento",
+  "edit-event": "Editar evento",
   participants: "Participantes",
   "org-payments": "Pagos",
   "org-stats": "Estadísticas",
@@ -100,6 +104,8 @@ export default function App() {
   const [showForgot, setShowForgot] = useState<boolean>(false)
   const [accessDenied, setAccessDenied] = useState<string>("")
   const [unreadNotifications, setUnreadNotifications] = useState<number>(0)
+  const [editingEventId, setEditingEventId] = useState<number | null>(null)
+  const [participantsEventId, setParticipantsEventId] = useState<number | null>(null)
 
   const refreshUnread = useCallback(() => {
     getUnreadCount()
@@ -183,12 +189,23 @@ export default function App() {
     }
 
     setAccessDenied("")
+    if (page === "participants") setParticipantsEventId(null)
     setCurrentPage(page)
   }
 
   const handleSelectEvent = (id: number) => {
     setSelectedEventId(id)
     setCurrentPage("event-detail")
+  }
+
+  const handleEditEvent = (id: number) => {
+    setEditingEventId(id)
+    setCurrentPage("edit-event")
+  }
+
+  const handleViewParticipants = (id: number) => {
+    setParticipantsEventId(id)
+    setCurrentPage("participants")
   }
 
   /** Retoma la inscripción de un evento (el backend reutiliza la inscripción pendiente). */
@@ -254,7 +271,14 @@ export default function App() {
       content = <ExploreEvents onNavigate={handleNavigate} onSelectEvent={handleSelectEvent} />
       break
     case "event-detail":
-      content = <EventDetail onNavigate={handleNavigate} eventId={selectedEventId} />
+      content = (
+        <EventDetail
+          onNavigate={handleNavigate}
+          eventId={selectedEventId}
+          canEnroll={role === "student"}
+          backPage={role === "organizer" ? "my-events" : "explore-events"}
+        />
+      )
       break
     case "enrollment-flow":
       content = <EnrollmentFlow onNavigate={handleNavigate} eventId={selectedEventId} />
@@ -279,22 +303,32 @@ export default function App() {
       break
 
     case "organizer-dashboard":
-      content = <OrganizerDashboard onNavigate={handleNavigate} />
+      content = <OrganizerDashboard onNavigate={handleNavigate} onViewParticipants={handleViewParticipants} />
       break
     case "my-events":
-      content = <ComingSoon title="Mis eventos" />
+      content = (
+        <MyEvents
+          onNavigate={handleNavigate}
+          onEdit={handleEditEvent}
+          onViewParticipants={handleViewParticipants}
+          onViewEvent={handleSelectEvent}
+        />
+      )
       break
     case "create-event":
-      content = <CreateEvent onNavigate={handleNavigate} />
+      content = <CreateEvent key="new" onNavigate={handleNavigate} />
+      break
+    case "edit-event":
+      content = <CreateEvent key={`edit-${editingEventId}`} onNavigate={handleNavigate} eventId={editingEventId} />
       break
     case "participants":
-      content = <Participants />
+      content = <Participants key={participantsEventId ?? "all"} initialEventId={participantsEventId} />
       break
     case "org-payments":
-      content = <ComingSoon title="Pagos" />
+      content = <OrgPayments />
       break
     case "org-stats":
-      content = <ComingSoon title="Estadísticas" />
+      content = <OrgStats />
       break
 
     case "admin-dashboard":

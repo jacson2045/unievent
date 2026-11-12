@@ -50,6 +50,8 @@ public class SecurityConfig {
                     "/swagger-ui.html",
                     "/v3/api-docs/**"
                 ).permitAll()
+                // "Mis eventos" es la única lectura que requiere sesión de organizador.
+                .requestMatchers(HttpMethod.GET, "/api/eventos/mis-eventos").hasAnyRole("ORGANIZADOR", "ADMIN")
                 .requestMatchers(HttpMethod.GET, "/api/**").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/**").hasAnyRole("ORGANIZADOR", "ADMIN")
                 .requestMatchers(HttpMethod.PUT, "/api/**").hasAnyRole("ORGANIZADOR", "ADMIN")

@@ -118,6 +118,31 @@ public class InscripcionService {
                 .toList();
     }
 
+    /**
+     * Inscripciones de los eventos del organizador (opcionalmente de un solo evento).
+     * Autorización a nivel de objeto: si pide un evento que no es suyo, se rechaza.
+     */
+    public List<InscripcionResponse> listarDeMisEventos(String authorization, Long eventoId) {
+        java.util.Set<Long> misEventos = eventoConsultaService.idsEventosDelOrganizador(authorization);
+
+        if (eventoId != null) {
+            if (!misEventos.contains(eventoId)) {
+                throw new org.springframework.security.access.AccessDeniedException(
+                        "No puedes ver los participantes de un evento que no organizas");
+            }
+            misEventos = java.util.Set.of(eventoId);
+        }
+        if (misEventos.isEmpty()) {
+            return List.of();
+        }
+
+        return inscripcionRepository
+                .findByEventoIdInOrderByFechaInscripcionDesc(misEventos)
+                .stream()
+                .map(this::toResponse)
+                .toList();
+    }
+
     public InscripcionResponse obtenerPorId(
             Long id,
             String estudianteCorreo) {

@@ -43,6 +43,14 @@ public class InscripcionController {
                 inscripcionService.listarPorEstudiante(estudianteCorreo));
     }
 
+    /** Organizador: inscripciones (con su pago) de los eventos que organiza. */
+    @GetMapping("/organizador")
+    public ResponseEntity<List<InscripcionResponse>> deMisEventos(
+            @RequestHeader("Authorization") String authorization,
+            @RequestParam(required = false) Long eventoId) {
+        return ResponseEntity.ok(inscripcionService.listarDeMisEventos(authorization, eventoId));
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<InscripcionResponse> obtenerPorId(
             @PathVariable Long id,
