@@ -216,7 +216,7 @@ describe("6. Pago con Mercado Pago y reglas de negocio", () => {
     assert.equal(again.status, 201, JSON.stringify(again.body));
     assert.equal(again.body.checkoutUrl, r.body.checkoutUrl);
 
-    // Regresión (bitácora H-07): un pago recién creado NO puede aparecer aprobado.
+    // Regresión (bitácora H-04): un pago recién creado NO puede aparecer aprobado.
     // Antes, la referencia enviada a Mercado Pago era el id de la tabla y chocaba con
     // pagos aprobados antiguos de la misma cuenta de pruebas.
     const estado = await get(`/api/inscripciones/${ctx.inscripcionPago}/pago/estado`, { token: ctx.A.token });

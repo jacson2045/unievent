@@ -1,30 +1,61 @@
 ﻿site_name: UniEvent Pay
-site_description: Documentacion tecnica de UniEvent Pay
+site_description: Documentación técnica de UniEvent Pay — plataforma distribuida de eventos universitarios
 site_author: Equipo UniEvent Pay
+repo_url: https://github.com/jacson2045/unievent
+repo_name: jacson2045/unievent
+edit_uri: ""
 
 theme:
   name: material
   language: es
+  palette:
+    - scheme: default
+      primary: indigo
+      accent: deep purple
+      toggle:
+        icon: material/weather-night
+        name: Modo oscuro
+    - scheme: slate
+      primary: indigo
+      accent: deep purple
+      toggle:
+        icon: material/weather-sunny
+        name: Modo claro
   features:
     - navigation.sections
-    - navigation.expand
     - navigation.top
+    - navigation.indexes
     - search.suggest
     - search.highlight
     - content.code.copy
 
 nav:
   - Inicio: index.md
-  - Arquitectura: arquitectura.md
-  - Microservicios: microservicios.md
-  - Infraestructura: infraestructura.md
-  - Ejecucion: ejecucion.md
+  - Instalación y ejecución: ejecucion.md
+  - Uso del sistema: uso.md
+  - Arquitectura:
+      - Arquitectura distribuida: arquitectura.md
+      - Microservicios y API: microservicios.md
+      - Datos y consistencia: datos.md
+      - Infraestructura: infraestructura.md
   - Observabilidad: observabilidad.md
-  - Pruebas: pruebas.md
+  - Validación:
+      - Pruebas integrales: pruebas.md
+      - Bitácora de validación: bitacora.md
+  - Equipo y aporte individual: equipo.md
+  - Repositorio y estándares: repositorio.md
+  - Limitaciones y mejoras: limitaciones.md
 
 markdown_extensions:
   - tables
   - admonition
-  - pymdownx.superfences
+  - attr_list
+  - md_in_html
+  - pymdownx.details
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
   - toc:
       permalink: true

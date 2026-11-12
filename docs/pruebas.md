@@ -74,7 +74,7 @@ y dos veces consecutivas con el mismo resultado.
 
 ## Hallazgo detectado por las pruebas
 
-**H-07 — Pagos marcados como aprobados sin haberse pagado.** La primera ejecución de CP-23
+**H-04 — Pagos marcados como aprobados sin haberse pagado.** La primera ejecución de CP-23
 falló: al repetir la solicitud de pago, el sistema respondía "La inscripción ya tiene un pago
 aprobado".
 
