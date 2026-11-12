@@ -3,6 +3,7 @@
 #   cp .env.example .env      # completar los secretos
 #   docker compose up -d --build
 #
+# Observabilidad: Prometheus (métricas), Grafana (paneles), Zipkin (trazas), Kafka UI.
 # Orden de arranque (depends_on + healthchecks):
 #   PostgreSQL x4, Kafka  ->  Config Server  ->  Discovery (Eureka)
 #   ->  auth / event / enrollment / notification  ->  API Gateway  ->  Frontend
@@ -238,9 +239,20 @@ services:
       GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin123}
     volumes:
       - ./infra/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./infra/grafana/dashboards:/var/lib/grafana/dashboards:ro
       - grafana-data:/var/lib/grafana
     ports: ["3000:3000"]
     depends_on: [prometheus]
+
+  # Trazas distribuidas: recorrido completo de cada petición entre servicios (incluye Kafka).
+  # Los servicios no dependen de Zipkin: si no está, siguen funcionando y solo no se exportan trazas.
+  zipkin:
+    image: openzipkin/zipkin:3.5
+    restart: unless-stopped
+    networks: [unievent]
+    environment:
+      TZ: America/Lima
+    ports: ["9411:9411"]
 
   kafka-ui:
     image: provectuslabs/kafka-ui:v0.7.2

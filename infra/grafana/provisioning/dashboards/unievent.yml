@@ -1,0 +1,11 @@
+apiVersion: 1
+
+# Carga automática de los paneles guardados en infra/grafana/dashboards (versionados en git).
+providers:
+  - name: unievent
+    folder: UniEvent Pay
+    type: file
+    disableDeletion: true
+    allowUiUpdates: true
+    options:
+      path: /var/lib/grafana/dashboards

@@ -7,7 +7,7 @@ levanta el sistema completo con un solo comando y solo requiere Docker.
 
 ### Requisitos
 
-- Docker Desktop 4.x (Docker Engine 24+ con Compose v2) con al menos **6 GB de RAM** asignados.
+- Docker Desktop 4.x (Docker Engine 24+ con Compose v2) con al menos **8 GB de RAM** asignados (el sistema completo usa unos 4,5 GB; la primera construcción necesita más).
 - Git.
 
 No se necesita Java, Maven ni Node.js: las imágenes compilan cada servicio dentro de Docker.
@@ -59,6 +59,7 @@ docker compose ps
 | Grafana (`admin` / `GRAFANA_ADMIN_PASSWORD`) | http://localhost:3000 |
 | Prometheus | http://localhost:9090 |
 | Kafka UI | http://localhost:8085 |
+| Zipkin (trazas distribuidas) | http://localhost:9411 |
 
 ### Operaciones útiles
 

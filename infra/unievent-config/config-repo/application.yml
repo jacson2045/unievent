@@ -18,3 +18,32 @@ management:
   endpoint:
     health:
       show-details: always
+  metrics:
+    distribution:
+      # Histograma de latencias HTTP: permite calcular percentiles (p95) en Grafana.
+      percentiles-histogram:
+        http.server.requests: true
+  # Trazas distribuidas: cada petición recibe un traceId que viaja por HTTP (cabecera
+  # W3C traceparent), Feign y Kafka; aparece en los logs de todos los servicios y en Zipkin.
+  tracing:
+    sampling:
+      probability: 1.0
+    export:
+      zipkin:
+        endpoint: ${ZIPKIN_URL:http://localhost:9411/api/v2/spans}
+
+spring:
+  kafka:
+    # El traceId también viaja en las cabeceras de los mensajes Kafka.
+    template:
+      observation-enabled: true
+    listener:
+      observation-enabled: true
+  reactor:
+    # Gateway (WebFlux): propaga el contexto de trazas entre hilos reactivos.
+    context-propagation: auto
+
+logging:
+  pattern:
+    # [servicio,traceId,spanId] al inicio de cada línea de log.
+    correlation: "[${spring.application.name:},%X{traceId:-},%X{spanId:-}] "

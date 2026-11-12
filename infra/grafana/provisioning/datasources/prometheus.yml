@@ -9,3 +9,9 @@ datasources:
     isDefault: true
     jsonData:
       timeInterval: 5s
+
+  - name: Zipkin
+    uid: zipkin
+    type: zipkin
+    access: proxy
+    url: http://zipkin:9411

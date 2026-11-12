@@ -42,6 +42,8 @@ spring:
                   - "http://127.0.0.1:*"
                 allowedMethods: [GET, POST, PUT, DELETE, PATCH, OPTIONS]
                 allowedHeaders: "*"
+                # Cabeceras que el navegador puede leer (diagnóstico y evidencia).
+                exposedHeaders: [X-Trace-Id, X-Instancia]
                 allowCredentials: true
                 maxAge: 3600
           # lb://<servicio>: el gateway busca las instancias en Eureka y reparte las

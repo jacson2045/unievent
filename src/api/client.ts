@@ -18,9 +18,12 @@ export interface ApiError {
 
 export class HttpError extends Error implements ApiError {
   status: number;
-  constructor(message: string, status: number) {
+  /** traceId de la petición (cabecera X-Trace-Id): permite ubicarla en logs y en Zipkin. */
+  traceId?: string;
+  constructor(message: string, status: number, traceId?: string) {
     super(message);
     this.status = status;
+    this.traceId = traceId;
     this.name = "HttpError";
   }
 }
@@ -104,7 +107,12 @@ export async function apiRequest<T>(
         clearAuth();
       }
 
-      throw new HttpError(message, response.status);
+      const traceId = response.headers.get("X-Trace-Id") ?? undefined;
+      // En errores del servidor se muestra el identificador para poder rastrear la falla.
+      if (response.status >= 500 && traceId) {
+        message = `${message} (ID de traza: ${traceId})`;
+      }
+      throw new HttpError(message, response.status, traceId);
     }
 
     return data as T;

@@ -1,58 +1,78 @@
-﻿# Observabilidad y monitoreo
+﻿# Observabilidad
 
-UniEvent Pay incorpora herramientas de observabilidad para supervisar el estado y el rendimiento de sus microservicios.
+UniEvent Pay cubre los cuatro pilares de observabilidad: **health checks**, **métricas**,
+**paneles** y **logs correlacionados con trazas distribuidas**. Todo se levanta con
+`docker compose up -d` y no requiere configuración manual.
 
-## Prometheus
+| Herramienta | URL | Para qué |
+|---|---|---|
+| Actuator (cada servicio) | `/actuator/health`, `/actuator/prometheus` | Salud y métricas expuestas por Spring Boot |
+| Panel del administrador | http://localhost:8443 → *Monitoreo del sistema* | Health checks en vivo vía gateway (`/monitor/{servicio}/health`) |
+| Prometheus | http://localhost:9090 | Recolección de métricas; descubre los servicios en **Eureka** |
+| Grafana | http://localhost:3000 (`admin` / `GRAFANA_ADMIN_PASSWORD`) | Panel *UniEvent Pay — Microservicios* |
+| Zipkin | http://localhost:9411 | Trazas distribuidas de cada petición |
+| Eureka | http://localhost:8761 | Instancias registradas |
+| Kafka UI | http://localhost:8085 | Tópicos y mensajes de `unievent.inscripciones` |
 
-Prometheus recopila métricas de los servicios backend mediante sus endpoints Actuator.
+## Health checks
 
-URL local:
+Cada servicio expone `/actuator/health` con sus componentes (base de datos, disco, Config Server,
+descubrimiento). Docker Compose los usa para decidir cuándo un servicio está listo (`healthy`) y en
+qué orden arrancar. El panel *Monitoreo del sistema* del administrador los consulta cada 15 s a través
+del gateway.
 
-`http://localhost:9090`
+## Métricas y panel de Grafana
 
-Entre las métricas disponibles se encuentran:
+Prometheus no tiene una lista fija de servicios: usa `eureka_sd_configs`
+([`infra/prometheus/prometheus-docker.yml`](https://github.com/jacson2045/unievent/blob/main/infra/prometheus/prometheus-docker.yml)),
+así que también mide réplicas nuevas (`docker compose up -d --scale event-service=2`).
 
-- Solicitudes HTTP.
-- Estado de salud de los servicios.
-- Métricas de JVM.
-- Métricas del Circuit Breaker.
+El panel está versionado en
+[`infra/grafana/dashboards/unievent-overview.json`](https://github.com/jacson2045/unievent/blob/main/infra/grafana/dashboards/unievent-overview.json)
+y Grafana lo carga al iniciar (carpeta *UniEvent Pay*). Tiene un filtro por servicio y estos paneles:
 
-## Grafana
+| Sección | Paneles |
+|---|---|
+| Resumen | Servicios en línea · peticiones/s · % de errores 5xx · latencia p95 del gateway |
+| Tráfico HTTP | Peticiones/s por servicio · latencia p95 por servicio · errores por servicio y código · endpoints más usados |
+| Mensajería y resiliencia | Eventos Kafka publicados/consumidos · estado del circuit breaker enrollment → event · llamadas del circuit breaker · conexiones a la base de datos |
+| JVM | Memoria heap · uso de CPU |
 
-Grafana permite visualizar las métricas recopiladas por Prometheus mediante paneles de monitoreo.
+## Logs correlacionados y trazas distribuidas
 
-URL local:
+Cada petición recibe un **traceId** (Micrometer Tracing + Brave) que viaja:
 
-`http://localhost:3000`
+- por HTTP entre el gateway y los servicios (cabecera W3C `traceparent`),
+- por **Feign** (enrollment-service → event-service),
+- por **Kafka**, en las cabeceras del mensaje (enrollment-service → event-service y notification-service).
 
-## Spring Boot Actuator
+Cada línea de log incluye `[servicio,traceId,spanId]` y cada respuesta HTTP trae la cabecera
+`X-Trace-Id`. En errores 5xx, el frontend muestra el identificador en el mensaje.
 
-Los microservicios exponen información de salud y métricas mediante endpoints Actuator, según la configuración de cada servicio.
+### Cómo comprobarlo
 
-Ejemplos:
+1. Inscribirse a un evento (desde el frontend o con la API) y copiar la cabecera `X-Trace-Id` de la respuesta
+   (en el navegador: herramientas de desarrollo → Red).
+2. Buscar ese identificador en los logs de todos los servicios:
 
-- `/actuator/health`
-- `/actuator/metrics`
-- `/actuator/prometheus`
+   ```bash
+   docker compose logs api-gateway enrollment-service event-service notification-service | grep <traceId>
+   ```
 
-## Resilience4j y Circuit Breaker
+3. Abrir la traza en Zipkin: `http://localhost:9411/zipkin/traces/<traceId>`.
 
-Enrollment Service utiliza Resilience4j para controlar las llamadas al Event Service.
+Resultado obtenido con una inscripción gratuita (12/11/2026):
 
-El Circuit Breaker permite identificar fallos y evitar solicitudes repetidas cuando un servicio presenta problemas.
+```
+X-Trace-Id: 6af64375d3a732f0e1bfc68edac9f3ed
 
-Sus estados principales son:
+Líneas de log con ese traceId:  api-gateway 8 · enrollment-service 13 · event-service 1 · notification-service 2
 
-- CLOSED: permite las solicitudes normalmente.
-- OPEN: bloquea temporalmente las solicitudes.
-- HALF_OPEN: permite solicitudes de prueba para comprobar la recuperación.
+[enrollment-service,6af64375…,1d98e9ad…]   InscripcionEventPublisher  : Evento … publicado en unievent.inscripciones
+[event-service,6af64375…,b2af3727…]        InscripcionEventosListener : Inscritos +1 en evento 24
+[notification-service,6af64375…,57872…]    InscripcionEventosListener : Notificacion creada …
 
-## Kafka
+Zipkin: 16 spans en 4 servicios (api-gateway, enrollment-service, event-service, notification-service)
+```
 
-Kafka permite la comunicación asíncrona entre componentes para el procesamiento de notificaciones.
-
-Kafka UI facilita la visualización y administración de los componentes de mensajería.
-
-URL local:
-
-`http://localhost:8085`
+La misma petición se sigue así a través de la llamada síncrona (Feign) y de la mensajería asíncrona (Kafka).
