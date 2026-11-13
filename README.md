@@ -4,6 +4,8 @@ Plataforma **distribuida** para gestionar eventos universitarios: publicación d
 inscripciones, pagos en línea con Mercado Pago (sandbox), asistencia con código QR y notificaciones.
 Producto final del curso *Desarrollo de Aplicaciones Distribuidas* — Universidad Peruana Unión.
 
+**Autor:** Yacson Carrizales Chuquimamani
+
 📖 **Documentación completa:** carpeta [`docs/`](docs/index.md) (sitio MkDocs).
 
 ## Arquitectura

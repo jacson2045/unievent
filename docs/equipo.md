@@ -1,35 +1,49 @@
 # Equipo y aporte individual
 
-!!! warning "Pendiente de completar por el equipo"
-    Esta página debe completarse con los integrantes reales del equipo, sus responsabilidades y la
-    evidencia de su aporte (commits, ramas, pantallas o servicios a cargo). No se deben registrar
-    aportes que no correspondan a cada persona.
-
-## Datos del curso
+## Datos del proyecto
 
 | Campo | Valor |
 |---|---|
 | Curso | Desarrollo de Aplicaciones Distribuidas |
 | Producto | Unidad 3 — Producto final |
 | Universidad | Universidad Peruana Unión |
-| Docente | *(completar)* |
-| Semestre | *(completar)* |
+| Integrante | **Yacson Carrizales Chuquimamani** |
+| Repositorio | <https://github.com/jacson2045/unievent> (`jacson2045`) |
 
-## Integrantes y responsabilidades
+## Integrante y responsabilidades
 
-| Integrante | Responsabilidad principal | Componentes a cargo | Evidencia |
-|---|---|---|---|
-| Yacson Carrizales | *(completar)* | *(completar)* | Commits en `jacson2045/unievent` |
-| *(completar)* | | | |
-| *(completar)* | | | |
+El proyecto fue desarrollado de forma **individual** por **Yacson Carrizales Chuquimamani**, responsable
+de todas las capas del sistema:
 
-## Cómo verificar el aporte
+| Área | Aporte |
+|---|---|
+| Arquitectura | Diseño de los microservicios, sus responsabilidades y la comunicación síncrona y asíncrona |
+| Backend | auth-service, event-service, enrollment-service, notification-service, API Gateway y Discovery Server (Spring Boot 4, Java 21) |
+| Seguridad | Autenticación JWT, autorización por rol y por dueño de cada recurso, administración de usuarios |
+| Mensajería y consistencia | Eventos de negocio en Kafka, consumidores idempotentes y compensación de pagos rechazados |
+| Resiliencia | Circuit breaker con Resilience4j, balanceo con Eureka, reintentos y timeouts en el gateway |
+| Integraciones | Pagos con Mercado Pago (sandbox), mapa de Google Maps, asistencia con código QR |
+| Frontend | Interfaz React para estudiante, organizador y administrador, conectada al backend por el gateway |
+| Infraestructura | Configuración centralizada por ambiente, Docker Compose con healthchecks, imágenes multi-etapa |
+| Observabilidad | Health checks, métricas con Prometheus, panel de Grafana, logs correlacionados y trazas con Zipkin |
+| Validación | 27 pruebas integrales E2E, bitácora de 16 hallazgos corregidos |
+| Documentación | Este sitio MkDocs, README y guía de ejecución |
+
+## Evidencia del aporte
+
+La autoría se verifica en el historial del repositorio: todos los commits son de `jacson2045`.
 
 ```bash
-git shortlog -sne --all                 # commits por autor
-git log --author="<nombre>" --stat      # archivos modificados por una persona
+git shortlog -sn --all              # commits por autor
+git log --stat --author="Yacson"    # archivos modificados en cada commit
 ```
 
-Cada integrante debe poder explicar en la sustentación las partes del sistema que construyó: el
-servicio o las pantallas a su cargo, las decisiones técnicas que tomó y las evidencias (pruebas, paneles,
-trazas) que las respaldan.
+Hitos principales, en orden:
+
+| Etapa | Commits |
+|---|---|
+| Base del sistema | Estado inicial; Feign + circuit breaker en enrollment-service; Swagger con JWT; secretos en variables de entorno |
+| Mensajería | Notificaciones con Kafka |
+| Frontend conectado al backend | Eventos, inscripción y pago con Mercado Pago, inscripciones, notificaciones, pagos, panel del organizador, asistencia con QR, perfil y administración |
+| Plataforma distribuida | Eureka y balanceo, Docker Compose, pruebas integrales, trazas y paneles |
+| Cierre | Bitácora, documentación, limpieza del repositorio, mapa de ubicación |
