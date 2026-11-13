@@ -30,6 +30,7 @@ logs/
 .vscode/
 .idea/
 .claude/
+/CLAUDE.md
 .github/modernize/
 HELP.md
 /.plugins/
