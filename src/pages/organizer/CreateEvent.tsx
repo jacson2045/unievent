@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { AlertCircle, ArrowLeft, Info, RefreshCw, Save } from "lucide-react";
 import Button from "../../components/ui/Button";
+import EventMap from "../../components/ui/EventMap";
 import {
   createEvent,
   getCategories,
@@ -25,6 +26,7 @@ interface FormState {
   modalidad: EventModality;
   tags: string;
   lugar: string;
+  direccion: string;
   organizador: string;
   fechaInicio: string; // yyyy-MM-ddTHH:mm (input datetime-local)
   fechaFin: string;
@@ -45,6 +47,7 @@ const EMPTY: FormState = {
   modalidad: "PRESENCIAL",
   tags: "",
   lugar: "",
+  direccion: "",
   organizador: "",
   fechaInicio: "",
   fechaFin: "",
@@ -91,6 +94,7 @@ function toPayload(f: FormState): EventPayload {
     fecha: `${f.fechaInicio}:00`,
     fechaFin: f.fechaFin ? `${f.fechaFin}:00` : null,
     lugar: f.lugar.trim(),
+    direccion: opt(f.direccion),
     capacidad: Number(f.capacidad),
     precio: f.gratuito ? 0 : Number(f.precio),
     categoriaId: Number(f.categoriaId),
@@ -117,6 +121,12 @@ export default function CreateEvent({ onNavigate, eventId = null }: Props) {
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState<Errors>({});
   const [serverError, setServerError] = useState("");
+  // Vista previa del mapa: se actualiza cuando el organizador deja de escribir (evita recargar el mapa en cada tecla).
+  const [mapPreview, setMapPreview] = useState({ lugar: "", direccion: "" });
+  useEffect(() => {
+    const t = window.setTimeout(() => setMapPreview({ lugar: form.lugar, direccion: form.direccion }), 800);
+    return () => window.clearTimeout(t);
+  }, [form.lugar, form.direccion]);
 
   useEffect(() => {
     let active = true;
@@ -137,6 +147,7 @@ export default function CreateEvent({ onNavigate, eventId = null }: Props) {
             modalidad: ev.modalidad ?? "PRESENCIAL",
             tags: (ev.tags ?? []).join(", "),
             lugar: ev.lugar,
+            direccion: ev.direccion ?? "",
             organizador: ev.organizador ?? "",
             fechaInicio: toLocalInput(ev.fecha),
             fechaFin: toLocalInput(ev.fechaFin),
@@ -265,6 +276,22 @@ export default function CreateEvent({ onNavigate, eventId = null }: Props) {
             <input value={form.organizador} onChange={set("organizador")} maxLength={150} className={inputCls()} />
           </Field>
         </div>
+        {form.modalidad !== "VIRTUAL" && (
+          <>
+            <Field
+              label="Dirección (para el mapa)"
+              hint="Opcional. Ej.: Carretera Central km 19.5, Ñaña, Lima. Si se deja vacía, se busca el lugar en la universidad."
+            >
+              <input value={form.direccion} onChange={set("direccion")} maxLength={255} placeholder="Calle, número, distrito, ciudad" className={inputCls()} />
+            </Field>
+            {(mapPreview.lugar.trim() || mapPreview.direccion.trim()) && (
+              <div>
+                <p className="text-xs font-medium text-slate-500 mb-2">Vista previa: así verán la ubicación los estudiantes</p>
+                <EventMap lugar={mapPreview.lugar} direccion={mapPreview.direccion} height={200} showActions={false} />
+              </div>
+            )}
+          </>
+        )}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Field label="Inicio *" error={errors.fechaInicio}>
             <input type="datetime-local" value={form.fechaInicio} onChange={set("fechaInicio")} className={inputCls(errors.fechaInicio)} />

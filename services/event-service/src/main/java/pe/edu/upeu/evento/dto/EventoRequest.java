@@ -60,6 +60,10 @@ public class EventoRequest {
     @Size(max = 500)
     private String imagenUrl;
 
+    /** Dirección para ubicar el evento en el mapa. Opcional. */
+    @Size(max = 255)
+    private String direccion;
+
     @JsonIgnore
     @AssertTrue(message = "La fecha de fin debe ser posterior a la fecha de inicio")
     public boolean isFechaFinValida() {

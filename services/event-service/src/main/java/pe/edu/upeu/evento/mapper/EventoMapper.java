@@ -39,6 +39,7 @@ public class EventoMapper {
         evento.setRequisitos(request.getRequisitos());
         evento.setTags(request.getTags());
         evento.setImagenUrl(request.getImagenUrl());
+        evento.setDireccion(request.getDireccion());
         evento.setCategoria(categoria);
     }
 
@@ -62,6 +63,7 @@ public class EventoMapper {
                 .requisitos(evento.getRequisitos())
                 .tags(separarTags(evento.getTags()))
                 .imagenUrl(evento.getImagenUrl())
+                .direccion(evento.getDireccion())
                 .categoria(categoriaMapper.toResponse(evento.getCategoria()))
                 .build();
     }

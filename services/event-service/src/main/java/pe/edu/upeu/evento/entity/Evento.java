@@ -70,6 +70,10 @@ public class Evento {
     @Column(name = "imagen_url", length = 500)
     private String imagenUrl;
 
+    /** Dirección para el mapa (por ejemplo "Carretera Central km 19.5, Ñaña, Lima"). Opcional. */
+    @Column(name = "direccion", length = 255)
+    private String direccion;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_categoria", nullable = false)
     private Categoria categoria;

@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import Button from "../../components/ui/Button";
 import Badge from "../../components/ui/Badge";
+import EventMap from "../../components/ui/EventMap";
 import { getEventById } from "../../api/eventsApi";
 import { MODALITY_LABELS, type BackendEvent } from "../../types/event";
 
@@ -230,13 +231,7 @@ export default function EventDetail({ onNavigate, eventId, canEnroll: roleCanEnr
 
           <div className="bg-white rounded-2xl border border-slate-100 p-6 shadow-[0_1px_3px_0_rgb(0_0_0/0.08)]">
             <h2 className="font-bold text-slate-900 font-display mb-3">Ubicación</h2>
-            <div className="min-h-32 bg-slate-100 rounded-xl flex items-center justify-center p-5">
-              <div className="text-center">
-                <MapPin size={28} className="text-slate-400 mx-auto mb-2" />
-                <p className="text-sm text-slate-700 font-medium">{event.lugar || "Lugar por confirmar"}</p>
-                <p className="text-xs text-slate-400 mt-1">Ubicación indicada por el organizador</p>
-              </div>
-            </div>
+            <EventMap lugar={event.lugar} direccion={event.direccion} modalidad={event.modalidad} />
           </div>
         </div>
 

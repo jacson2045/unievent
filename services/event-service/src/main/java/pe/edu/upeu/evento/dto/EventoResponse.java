@@ -28,5 +28,6 @@ public class EventoResponse {
     private String requisitos;
     private List<String> tags;
     private String imagenUrl;
+    private String direccion;
     private CategoriaResponse categoria;
 }

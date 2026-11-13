@@ -24,6 +24,8 @@ export interface BackendEvent {
   requisitos: string | null;
   tags: string[];
   imagenUrl: string | null;
+  /** Dirección para el mapa (opcional). */
+  direccion: string | null;
   categoria: EventCategory | null;
 }
 
@@ -49,4 +51,5 @@ export interface EventPayload {
   requisitos: string | null;
   tags: string | null;
   imagenUrl: string | null;
+  direccion: string | null;
 }
