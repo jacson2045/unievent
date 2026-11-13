@@ -31,7 +31,7 @@ automatizado ([Pruebas integrales](pruebas.md)) que impide que el error vuelva.
 - **Detección:** revisión de la autorización por objeto (requisito de la rúbrica) en event-service.
 - **Causa:** las rutas de escritura solo exigían el rol `ORGANIZADOR`; el evento no guardaba quién lo creó.
 - **Corrección:** columna `organizador_correo` (migración `V5`), el dueño se toma del JWT y
-  editar/cancelar/eliminar exige ser el dueño o ADMIN (403 en caso contrario). — commit `cbbcc71`
+  editar/cancelar/eliminar exige ser el dueño o ADMIN (403 en caso contrario). — commit `55be4a0`
 - **Verificación:** CP-10 (el organizador P recibe 403 al editar, cancelar o borrar el evento de O
   y el evento queda intacto) y CP-17 (P no ve los participantes de O).
 
@@ -40,7 +40,7 @@ automatizado ([Pruebas integrales](pruebas.md)) que impide que el error vuelva.
 - **Detección:** revisión de `RegistroRequest` al implementar la gestión de usuarios.
 - **Causa:** la validación aceptaba `ESTUDIANTE|ORGANIZADOR|ADMIN` en el registro abierto.
 - **Corrección:** el registro solo admite estudiante u organizador; el primer administrador se crea
-  al arrancar con la variable `ADMIN_PASSWORD` (nunca en el repositorio). — commit `4b2418c`
+  al arrancar con la variable `ADMIN_PASSWORD` (nunca en el repositorio). — commit `4c95b26`
 - **Verificación:** CP-05 (registro con rol ADMIN → 400).
 
 ## H-03 — auth-service sin validación de JWT
@@ -48,7 +48,7 @@ automatizado ([Pruebas integrales](pruebas.md)) que impide que el error vuelva.
 - **Detección:** al implementar el perfil, el endpoint protegido respondía sin token.
 - **Causa:** `SecurityConfig` permitía `/api/auth/**` completo y no había filtro JWT.
 - **Corrección:** filtro JWT propio; solo login y registro son públicos (401 sin token o con token
-  inválido). — commit `a74cfe0`
+  inválido). — commit `a6a929f`
 - **Verificación:** CP-06 (`/api/auth/perfil` sin token → 401).
 
 ## H-04 — Pagos aprobados sin haberse pagado
@@ -60,7 +60,7 @@ automatizado ([Pruebas integrales](pruebas.md)) que impide que el error vuelva.
   **aprobados** antiguos de la misma cuenta de pruebas: el pago nuevo se marcaba como aprobado y la
   inscripción se confirmaba sin pago.
 - **Corrección:** cada pago tiene una referencia propia (UUID) en `referencia_externa`
-  (migración `V7`); los pagos antiguos conservan la suya. — commit `b02cff7`
+  (migración `V7`); los pagos antiguos conservan la suya. — commit `143c508`
 - **Verificación:** CP-23 comprueba que un pago recién creado sigue `PENDING` y la inscripción
   `PENDIENTE`; la suite pasa 27/27.
 
@@ -71,7 +71,7 @@ automatizado ([Pruebas integrales](pruebas.md)) que impide que el error vuelva.
   consumía el evento de Kafka).
 - **Corrección:** event-service es un segundo consumidor del tópico `unievent.inscripciones`
   (grupo propio) e incrementa el contador de forma atómica e idempotente (tabla
-  `eventos_procesados`). Solo cuenta `INSCRIPCION_CONFIRMADA`. — commits `f583e6a`, `8d9c660`
+  `eventos_procesados`). Solo cuenta `INSCRIPCION_CONFIRMADA`. — commits `1ae36e7`, `e9f6483`
 - **Verificación:** CP-14 (tras la inscripción, `inscritos = 1`). Al enviar el mismo mensaje dos veces,
   el log muestra "Evento duplicado … ignorado (idempotencia)".
 - **Nota:** los datos de desarrollo anteriores a la integración con Kafka se alinearon manualmente.
@@ -80,7 +80,7 @@ automatizado ([Pruebas integrales](pruebas.md)) que impide que el error vuelva.
 
 - **Detección:** al implementar *Mis pagos*: un pago rechazado anulaba la inscripción, pero nadie lo sabía.
 - **Corrección:** la compensación publica `INSCRIPCION_CANCELADA` en Kafka y notification-service
-  crea el aviso "Pago no completado: inscripción anulada". — commit `8d9c660`
+  crea el aviso "Pago no completado: inscripción anulada". — commit `e9f6483`
 - **Verificación:** pruebas unitarias del publicador y de `NotificacionService`; mensaje de prueba en
   Kafka enviado dos veces → una sola notificación y el contador de inscritos sin cambios.
 
@@ -88,14 +88,14 @@ automatizado ([Pruebas integrales](pruebas.md)) que impide que el error vuelva.
 
 - **Detección:** prueba manual: los eventos de ejemplo vencidos seguían aceptando inscripciones.
 - **Corrección:** enrollment-service rechaza eventos con fecha pasada (409) y el frontend los muestra
-  como "Finalizado". — commit `f583e6a`
+  como "Finalizado". — commit `1ae36e7`
 - **Verificación:** inscripción al evento vencido → 409 "El evento ya se realizó".
 
 ## H-08 — Retorno de Mercado Pago a una URL inexistente
 
 - **Causa:** las `back_urls` apuntaban a `http://localhost:4200/pago-exitoso` (otro proyecto).
 - **Corrección:** URL configurable `FRONTEND_URL`; nueva página *Resultado del pago* que verifica el
-  estado con reintentos. — commit `f583e6a`
+  estado con reintentos. — commit `1ae36e7`
 - **Verificación:** redirección al checkout sandbox y retorno a la página de resultado.
 
 ## H-09 — Servicios que no usaban la configuración centralizada
@@ -105,7 +105,7 @@ automatizado ([Pruebas integrales](pruebas.md)) que impide que el error vuelva.
   `spring-cloud-starter-config`; al ser `optional:` se ignoraba sin error. notification-service y el
   gateway no estaban conectados.
 - **Corrección:** cliente de Config Server en los cinco servicios, configuración común en
-  `config-repo/application.yml` y ambiente `docker`. — commits `c674f1f`, `8385065`
+  `config-repo/application.yml` y ambiente `docker`. — commits `0bcdc7a`, `201d8f3`
 - **Verificación:** *Monitoreo del sistema* muestra "Config Server: UP" en todos los servicios.
 
 ## H-10 — Errores 500 al caer una instancia
@@ -114,7 +114,7 @@ automatizado ([Pruebas integrales](pruebas.md)) que impide que el error vuelva.
   durante unos 35 s la mitad de las peticiones respondía 500.
 - **Causa:** el gateway seguía enviando tráfico a la instancia muerta mientras figuraba en su caché.
 - **Corrección:** filtro `Retry` para peticiones GET (reintenta en otra instancia) y caché del balanceador
-  de 5 s. — commit `c674f1f`
+  de 5 s. — commit `0bcdc7a`
 - **Verificación:** misma prueba repetida: 40/40 respuestas 200 (máx. 170 ms).
 
 ## H-11 — Peticiones colgadas al retirar una réplica en Docker
@@ -122,18 +122,18 @@ automatizado ([Pruebas integrales](pruebas.md)) que impide que el error vuelva.
 - **Detección:** al bajar `event-service` de 2 a 1 réplica, peticiones del panel de monitoreo
   quedaban esperando sin respuesta.
 - **Causa:** el gateway no tenía tiempo máximo de conexión; la IP del contenedor eliminado no responde.
-- **Corrección:** `connect-timeout` de 2 s y `response-timeout` de 15 s en el gateway. — commit `8385065`
+- **Corrección:** `connect-timeout` de 2 s y `response-timeout` de 15 s en el gateway. — commit `201d8f3`
 - **Verificación:** 40/40 respuestas 200 tras retirar la réplica; la más lenta, 3,2 s.
 
 ## H-12 — Código HTTP incorrecto con event-service caído
 
 - **Causa:** el *fallback* del circuit breaker lanzaba una excepción que el manejador traducía a 409.
-- **Corrección:** se responde 503 (servicio no disponible). — commit `f583e6a`
+- **Corrección:** se responde 503 (servicio no disponible). — commit `1ae36e7`
 
 ## H-13 — Fechas en UTC dentro de los contenedores
 
 - **Detección:** la hora de asistencia registrada en Docker aparecía con 5 horas de diferencia.
-- **Corrección:** `TZ=America/Lima` en los contenedores Java y PostgreSQL. — commit `8385065`
+- **Corrección:** `TZ=America/Lima` en los contenedores Java y PostgreSQL. — commit `201d8f3`
 - **Verificación:** `date` en los contenedores muestra `-05`.
 
 ## H-14 — Config Server detenido por clases de Java 25
@@ -157,7 +157,7 @@ automatizado ([Pruebas integrales](pruebas.md)) que impide que el error vuelva.
 - **Detección:** auditoría inicial del frontend: 13 de 18 pantallas usaban `mockData.ts` o simulaban
   acciones con esperas.
 - **Corrección:** todas las pantallas conectadas al backend en los pasos 1 a 9 y eliminación de
-  `mockData.ts`. — commits `a7ff879` a `4b2418c`
+  `mockData.ts`. — commits `48920bf` a `4c95b26`
 
 ---
 
